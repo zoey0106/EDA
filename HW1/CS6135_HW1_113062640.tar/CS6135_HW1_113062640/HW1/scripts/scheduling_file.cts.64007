@@ -1,0 +1,16 @@
+MacroModel pin core_w_mem_inst_w_mem_reg[1][6]/CLK  13.50ps 13.50ps 13.50ps 13.50ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][25]/CLK  15.00ps 15.00ps 15.00ps 15.00ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][23]/CLK  15.60ps 15.60ps 15.60ps 15.60ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[14][22]/CLK  15.20ps 15.20ps 15.20ps 15.20ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][12]/CLK  15.10ps 15.10ps 15.10ps 15.10ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][22]/CLK  15.00ps 15.00ps 15.00ps 15.00ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][24]/CLK  13.00ps 13.00ps 13.00ps 13.00ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][26]/CLK  12.60ps 12.60ps 12.60ps 12.60ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][10]/CLK  12.40ps 12.40ps 12.40ps 12.40ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][16]/CLK  12.30ps 12.30ps 12.30ps 12.30ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][27]/CLK  12.30ps 12.30ps 12.30ps 12.30ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[14][20]/CLK  11.60ps 11.60ps 11.60ps 11.60ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][29]/CLK  11.50ps 11.50ps 11.50ps 11.50ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][28]/CLK  11.00ps 11.00ps 11.00ps 11.00ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][30]/CLK  10.70ps 10.70ps 10.70ps 10.70ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][20]/CLK  10.60ps 10.60ps 10.60ps 10.60ps 0pf view_tc

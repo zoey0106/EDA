@@ -1,0 +1,2 @@
+MacroModel pin core_w_mem_inst_w_mem_reg[1][25]/CLK  11.50ps 11.50ps 11.50ps 11.50ps 0pf view_tc
+MacroModel pin core_w_mem_inst_w_mem_reg[1][23]/CLK  10.00ps 10.00ps 10.00ps 10.00ps 0pf view_tc

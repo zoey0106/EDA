@@ -1,0 +1,29 @@
+[03/07 16:24:44      0s] 
+[03/07 16:24:44      0s] Cadence Innovus(TM) Implementation System.
+[03/07 16:24:44      0s] Copyright 2021 Cadence Design Systems, Inc. All rights reserved worldwide.
+[03/07 16:24:44      0s] 
+[03/07 16:24:44      0s] Version:	v21.13-s100_1, built Fri Mar 4 14:32:31 PST 2022
+[03/07 16:24:44      0s] Options:	-no_gui -init apr.tcl 
+[03/07 16:24:44      0s] Date:		Fri Mar  7 16:24:44 2025
+[03/07 16:24:44      0s] Host:		ic22 (x86_64 w/Linux 3.10.0-1160.95.1.el7.x86_64) (16cores*64cpus*AMD EPYC 7282 16-Core Processor 512KB)
+[03/07 16:24:44      0s] OS:		CentOS Linux release 7.9.2009 (Core)
+[03/07 16:24:44      0s] 
+[03/07 16:24:44      0s] License:
+[03/07 16:24:44      0s] 		[16:24:44.370605] Configured Lic search path (20.02-s004): 5280@nthucad:5280@lstc:26585@lshc::1717@lshc
+
+[03/07 16:24:44      0s] 		invs	Innovus Implementation System	21.1	checkout succeeded
+[03/07 16:24:44      0s] 		8 CPU jobs allowed with the current license(s). Use setMultiCpuUsage to set your required CPU count.
+[03/07 16:24:57     12s] Reset Parastics called with the command setExtractRCMode -reset@(#)CDS: Innovus v21.13-s100_1 (64bit) 03/04/2022 14:32 (Linux 3.10.0-693.el7.x86_64)
+[03/07 16:25:00     14s] @(#)CDS: NanoRoute 21.13-s100_1 NR220220-0140/21_13-UB (database version 18.20.572) {superthreading v2.17}
+[03/07 16:25:00     14s] @(#)CDS: AAE 21.13-s034 (64bit) 03/04/2022 (Linux 3.10.0-693.el7.x86_64)
+[03/07 16:25:00     14s] @(#)CDS: CTE 21.13-s042_1 () Mar  4 2022 08:38:36 ( )
+[03/07 16:25:00     14s] @(#)CDS: SYNTECH 21.13-s014_1 () Feb 17 2022 23:50:03 ( )
+[03/07 16:25:00     14s] @(#)CDS: CPE v21.13-s074
+[03/07 16:25:00     14s] @(#)CDS: IQuantus/TQuantus 20.1.2-s656 (64bit) Tue Nov 9 23:11:16 PST 2021 (Linux 2.6.32-431.11.2.el6.x86_64)
+[03/07 16:25:00     14s] @(#)CDS: OA 22.60-p067 Fri Jan 14 12:14:46 2022
+[03/07 16:25:00     14s] @(#)CDS: SGN 20.10-d001 (01-Jun-2020) (64 bit executable, Qt5.9.0)
+[03/07 16:25:00     14s] @(#)CDS: RCDB 11.15.0
+[03/07 16:25:00     14s] @(#)CDS: STYLUS 21.11-s013_1 (12/14/2021 07:38 PST)
+[03/07 16:25:00     14s] Create and set the environment variable TMPDIR to /tmp/innovus_temp_5323_ic22_g113062640_jHpB74.
+
+[03/07 16:25:00     14s] Change the soft stacksize limit to 0.2%RAM (385 mbytes). Set global soft_stack_size_limit to change the value.

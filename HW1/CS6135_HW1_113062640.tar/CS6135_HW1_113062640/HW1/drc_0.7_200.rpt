@@ -1,0 +1,39 @@
+#-check_same_via_cell true               # bool, default=false, user setting
+ *** Starting Verify DRC (MEM: 3593.4) ***
+
+  VERIFY DRC ...... Starting Verification
+  VERIFY DRC ...... Initializing
+  VERIFY DRC ...... Deleting Existing Violations
+  VERIFY DRC ...... Creating Sub-Areas
+  VERIFY DRC ...... Using new threading
+ VERIFY DRC ...... Sub-Area: {0.000 0.000 48.384 48.384} 1 of 16  Thread : 3
+ VERIFY DRC ...... Sub-Area: {96.768 0.000 145.152 48.384} 3 of 16  Thread : 0
+ VERIFY DRC ...... Sub-Area: {0.000 96.768 48.384 145.152} 9 of 16  Thread : 4
+ VERIFY DRC ...... Sub-Area: {96.768 96.768 145.152 145.152} 11 of 16  Thread : 2
+ VERIFY DRC ...... Sub-Area: {48.384 0.000 96.768 48.384} 2 of 16  Thread : 0
+ VERIFY DRC ...... Sub-Area: {145.152 0.000 193.392 48.384} 4 of 16  Thread : 3
+ VERIFY DRC ...... Sub-Area: {0.000 145.152 48.384 191.952} 13 of 16  Thread : 4
+ VERIFY DRC ...... Sub-Area: {145.152 96.768 193.392 145.152} 12 of 16  Thread : 2
+ VERIFY DRC ...... Sub-Area: {48.384 48.384 96.768 96.768} 6 of 16  Thread : 0
+ VERIFY DRC ...... Sub-Area: {48.384 145.152 96.768 191.952} 14 of 16  Thread : 4
+ VERIFY DRC ...... Sub-Area: {145.152 145.152 193.392 191.952} 16 of 16  Thread : 3
+ VERIFY DRC ...... Sub-Area: {145.152 48.384 193.392 96.768} 8 of 16  Thread : 2
+ VERIFY DRC ...... Sub-Area: {0.000 48.384 48.384 96.768} 5 of 16  Thread : 0
+ VERIFY DRC ...... Sub-Area: {96.768 145.152 145.152 191.952} 15 of 16  Thread : 3
+ VERIFY DRC ...... Sub-Area: {96.768 48.384 145.152 96.768} 7 of 16  Thread : 2
+ VERIFY DRC ...... Thread : 3 finished.
+ VERIFY DRC ...... Sub-Area: {48.384 96.768 96.768 145.152} 10 of 16  Thread : 2
+ VERIFY DRC ...... Thread : 2 finished.
+
+  Verification Complete : 23 Viols.
+
+ Violation Summary By Layer and Type:
+
+	          Short   MetSpc    EolKO   EOLSpc   Totals
+	M2           14        1        1        1       17
+	M4            0        0        1        0        1
+	M6            0        5        0        0        5
+	Totals       14        6        2        1       23
+
+ *** End Verify DRC (CPU: 0:00:48.8  ELAPSED TIME: 15.00  MEM: 986.7M) ***
+

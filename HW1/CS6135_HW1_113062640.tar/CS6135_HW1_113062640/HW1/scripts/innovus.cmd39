@@ -1,0 +1,147 @@
+#######################################################
+#                                                     
+#  Innovus Command Logging File                     
+#  Created on Sun Mar  9 21:10:19 2025                
+#                                                     
+#######################################################
+
+#@(#)CDS: Innovus v21.13-s100_1 (64bit) 03/04/2022 14:32 (Linux 3.10.0-693.el7.x86_64)
+#@(#)CDS: NanoRoute 21.13-s100_1 NR220220-0140/21_13-UB (database version 18.20.572) {superthreading v2.17}
+#@(#)CDS: AAE 21.13-s034 (64bit) 03/04/2022 (Linux 3.10.0-693.el7.x86_64)
+#@(#)CDS: CTE 21.13-s042_1 () Mar  4 2022 08:38:36 ( )
+#@(#)CDS: SYNTECH 21.13-s014_1 () Feb 17 2022 23:50:03 ( )
+#@(#)CDS: CPE v21.13-s074
+#@(#)CDS: IQuantus/TQuantus 20.1.2-s656 (64bit) Tue Nov 9 23:11:16 PST 2021 (Linux 2.6.32-431.11.2.el6.x86_64)
+
+set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+suppressMessage ENCEXT-2799
+set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+suppressMessage ENCEXT-2799
+set_global _enable_mmmc_by_default_flow      $CTE::mmmc_default
+suppressMessage ENCEXT-2799
+win
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+get_message -id GLOBAL-100 -suppress
+setMultiCpuUsage -localCpu 8 -cpuPerRemoteHost 1 -remoteHost 0 -keepLicense true
+setDistributeHost -local
+setDesignMode -process 7 -node N7
+set init_gnd_net VSS
+set init_lef_file {../lef/asap7_tech_4x_201209.lef ../lef/asap7sc7p5t_28_L_4x_220121a.lef ../lef/asap7sc7p5t_28_SL_4x_220121a.lef}
+set init_design_settop 0
+set init_verilog ../design/sha256.v
+set init_mmmc_file mmmc.view
+set init_pwr_net VDD
+init_design
+fit
+setDesignMode -bottomRoutingLayer 2
+setDesignMode -topRoutingLayer 7
+saveDesign setup
+clearGlobalNets
+globalNetConnect VDD -type pgpin -pin VDD -instanceBasename *
+globalNetConnect VSS -type pgpin -pin VSS -instanceBasename *
+getIoFlowFlag
+setIoFlowFlag 0
+floorPlan -coreMarginsBy die -site asap7sc7p5t -r 1.0 0.6 6.22 6.22 6.22 6.22
+uiSetTool select
+getIoFlowFlag
+fit
+addWellTap -cell TAPCELL_ASAP7_75t_L -cellInterval 12.960 -inRowOffset 1.296
+add_tracks -snap_m1_track_to_cell_pins
+add_tracks -mode replace -offsets {M5 vertical 0}
+deleteAllFPObjects
+addWellTap -cell TAPCELL_ASAP7_75t_L -cellInterval 12.960 -inRowOffset 1.296
+setPinAssignMode -pinEditInBatch true
+editPin -fixOverlap 1 -unit MICRON -spreadDirection clockwise -side Left -layer 3 -spreadType center -spacing 2.016 -pin {reset_n clk {address[0]} {address[1]} {address[2]} {address[3]} {address[4]} {address[5]} {address[6]} {address[7]} cs we {write_data[0]} {write_data[1]} {write_data[2]} {write_data[3]} {write_data[4]} {write_data[5]} {write_data[6]} {write_data[7]} {write_data[8]} {write_data[9]} {write_data[10]} {write_data[11]} {write_data[12]} {write_data[13]} {write_data[14]} {write_data[15]} {write_data[16]} {write_data[17]} {write_data[18]} {write_data[19]} {write_data[20]} {write_data[21]} {write_data[22]} {write_data[23]} {write_data[24]} {write_data[25]} {write_data[26]} {write_data[27]} {write_data[28]} {write_data[29]} {write_data[30]} {write_data[31]}}
+editPin -fixOverlap 1 -unit MICRON -spreadDirection clockwise -side Right -layer 3 -spreadType center -spacing 2 -pin {error {read_data[0]} {read_data[1]} {read_data[2]} {read_data[3]} {read_data[4]} {read_data[5]} {read_data[6]} {read_data[7]} {read_data[8]} {read_data[9]} {read_data[10]} {read_data[11]} {read_data[12]} {read_data[13]} {read_data[14]} {read_data[15]} {read_data[16]} {read_data[17]} {read_data[18]} {read_data[19]} {read_data[20]} {read_data[21]} {read_data[22]} {read_data[23]} {read_data[24]} {read_data[25]} {read_data[26]} {read_data[27]} {read_data[28]} {read_data[29]} {read_data[30]} {read_data[31]}}
+editPin -snap TRACK -pin *
+setPinAssignMode -pinEditInBatch false
+legalizePin
+set sprCreateIeRingOffset 1.0
+set sprCreateIeRingThreshold 1.0
+set sprCreateIeRingJogDistance 1.0
+set sprCreateIeRingLayers {}
+set sprCreateIeRingOffset 1.0
+set sprCreateIeRingThreshold 1.0
+set sprCreateIeRingJogDistance 1.0
+set sprCreateIeRingLayers {}
+set sprCreateIeStripeWidth 10.0
+set sprCreateIeStripeThreshold 1.0
+set sprCreateIeStripeWidth 10.0
+set sprCreateIeStripeThreshold 1.0
+set sprCreateIeRingOffset 1.0
+set sprCreateIeRingThreshold 1.0
+set sprCreateIeRingJogDistance 1.0
+set sprCreateIeRingLayers {}
+set sprCreateIeStripeWidth 10.0
+set sprCreateIeStripeThreshold 1.0
+setAddRingMode -ring_target default -extend_over_row 0 -ignore_rows 0 -avoid_short 0 -skip_crossing_trunks none -stacked_via_top_layer Pad -stacked_via_bottom_layer M1 -via_using_exact_crossover_size 1 -orthogonal_only true -skip_via_on_pin {  standardcell } -skip_via_on_wire_shape {  noshape }
+addRing -nets {VDD VSS} -type core_rings -follow core -layer {top M7 bottom M7 left M6 right M6} -width {top 2.176 bottom 2.176 left 2.176 right 2.176} -spacing {top 0.384 bottom 0.384 left 0.384 right 0.384} -offset {top 0.384 bottom 0.384 left 0.384 right 0.384} -center 0 -threshold 0 -jog_distance 0 -snap_wire_center_to_grid None
+addStripe -skip_via_on_wire_shape blockring -direction horizontal -set_to_set_distance 2.16 -skip_via_on_pin Standardcell -stacked_via_top_layer M1 -layer M2 -width 0.072 -nets VDD -stacked_via_bottom_layer M1 -start_from bottom -snap_wire_center_to_grid None -start_offset -0.044 -stop_offset -0.044
+addStripe -skip_via_on_wire_shape blockring -direction horizontal -set_to_set_distance 2.16 -skip_via_on_pin Standardcell -stacked_via_top_layer M1 -layer M2 -width 0.072 -nets VSS -stacked_via_bottom_layer M1 -start_from bottom -snap_wire_center_to_grid None -start_offset 1.036 -stop_offset -0.044
+addStripe -skip_via_on_wire_shape Noshape -set_to_set_distance 12.960 -skip_via_on_pin Standardcell -stacked_via_top_layer Pad -spacing 0.360 -xleft_offset 0.360 -layer M3 -width 0.936 -nets {VDD VSS} -stacked_via_bottom_layer M2 -start_from left
+addStripe -skip_via_on_wire_shape Noshape -direction horizontal -set_to_set_distance 21.6 -skip_via_on_pin Standardcell -stacked_via_top_layer M7 -spacing 0.864 -layer M4 -width 0.864 -nets {VDD VSS} -stacked_via_bottom_layer M3 -start_from bottom
+setSrouteMode -reset
+setSrouteMode -viaConnectToShape { noshape }
+sroute -connect { corePin } -layerChangeRange { M1(1) M7(1) } -blockPinTarget { nearestTarget } -floatingStripeTarget { blockring padring ring stripe ringpin blockpin followpin } -deleteExistingRoutes -allowJogging 0 -crossoverViaLayerRange { M1(1) Pad(10) } -nets { VDD VSS } -allowLayerChange 0 -targetViaLayerRange { M1(1) Pad(10) }
+editPowerVia -add_vias 1 -orthogonal_only 0
+place_opt_design
+setLayerPreference node_net -isVisible 0
+setLayerPreference clock -isVisible 1
+saveDesign placement
+routeDesign
+editPowerVia -delete_vias 1 -top_layer 7 -bottom_layer 6
+editPowerVia -delete_vias 1 -top_layer 6 -bottom_layer 5
+editPowerVia -delete_vias 1 -top_layer 5 -bottom_layer 4
+editPowerVia -delete_vias 1 -top_layer 4 -bottom_layer 3
+editPowerVia -delete_vias 1 -top_layer 3 -bottom_layer 2
+editPowerVia -delete_vias 1 -top_layer 2 -bottom_layer 1
+editPowerVia -add_vias 1
+setLayerPreference node_net -isVisible 1
+setLayerPreference node_net -isVisible 0
+setLayerPreference node_net -isVisible 1
+selectWire 1.2160 29.7240 249.9200 30.5880 4 VSS
+saveDesign route
+deselectAll
+fit
+ecoRoute -fix_drc
+summaryReport -noHtml -outfile ../summary_0.6_200.rpt
+report_timing > ../timing_0.6_200.rpt
+verify_drc > ../drc_0.6_200.rpt
