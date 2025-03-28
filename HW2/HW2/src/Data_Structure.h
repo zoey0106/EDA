@@ -81,6 +81,8 @@ class Info{
         void initialize();
         void gain_initialize();
         void reset();
+        void rebuild_maps();
+        Info clone() const;
         // for error check 
         void print_cell_vector(); 
         void print_net_vector();
@@ -93,15 +95,24 @@ class FM_BucketList{
 
         map<long long, deque<Cell*>, greater<long long>> bucketA;
         map<long long, deque<Cell*>, greater<long long>> bucketB;
+        
+        /*Records*/
+        vector<Cell*> move_squence;
+        vector<long long> gain_sequence;
+        long long max_gain;
+        int max_index;
 
+        // basic bucketlist op.
         void insert(Cell* cell, string tech);
         Cell* get_max_gain_cell(string tech);
         void remove(Cell* cell);
         bool empty(string tech) const;
         void update_gain(Cell* cell, long long gain);
-
         // error check
         void printf_bucket(string tech);
+        // FM op
+        void FM(const Info& info); // wrap FM algo.
+        Cell* select_move_cell(const Info& info);
 };
 
 

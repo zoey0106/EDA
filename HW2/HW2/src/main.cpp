@@ -16,10 +16,18 @@ int main(int argc, char *argv[]){
     build_data_structure(info, input); // Initial info
     info.die_initialize(); // Initial die partition
     info.initialize(); // Compelete info
-    // FM algo.
     info.gain_initialize(); // Initial gain
-    FM_BucketList Bucket(info); // Init Bucket
-    
-    Bucket.printf_bucket("DieA");
+    // FM algo.
+    // until G_K <= 0
+
+    while(1){
+        Info FM_info = info.clone();
+        FM_BucketList Bucket(FM_info); // Init Bucket
+        Bucket.FM(FM_info); // based on FM info to mimic transaction
+
+
+        break;
+    }
+
     return 0;
 }

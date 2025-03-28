@@ -6,8 +6,8 @@ LFLAGS=
 LIBS=
 SOURCES=$(wildcard src/*.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=bin/hw2
-
+EXECUTABLE=bin/hw2.exe
+OBJ_DIR=src
 all: $(SOURCES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $(INCLUDES) $(OBJECTS) -o $@ $(LFLAGS) $(LIBS)
@@ -15,4 +15,4 @@ $(EXECUTABLE): $(OBJECTS)
 %.o: %.cpp $(HEADERS)
 	$(CC) $(FLAGS) -c $< -o $@
 clean:
-	rm -rf *.o $(EXECUTABLE)
+	rm -f $(OBJ_DIR)/*.o $(EXECUTABLE)

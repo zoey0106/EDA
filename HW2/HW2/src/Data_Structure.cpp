@@ -210,6 +210,51 @@ void Info::gain_initialize(){
         }
     }
 }
+
+void Info::rebuild_maps(){
+    cell_map.clear();
+    for (auto& cell : cells) {
+        cell_map[cell.id] = &cell;
+    }
+
+    net_map.clear();
+    for (auto& net : nets) {
+        net_map[net.id] = &net;
+    }
+}
+
+Info Info::clone() const {
+    
+    Info copy;
+    copy.dies = dies;
+    copy.tech_list = tech_list;
+    for (const auto& cell : cells) {
+        Cell new_cell = cell;
+        new_cell.net_list.clear();  
+        copy.cells.push_back(new_cell);
+    }
+    for (const auto& net : nets) {
+        Net new_net = net;
+        new_net.cell_list.clear();  
+        copy.nets.push_back(new_net);
+    }
+    copy.rebuild_maps();
+    for (int i = 0; i < nets.size(); ++i) {
+        for (const auto& cell_ptr : nets[i].cell_list) {
+            string id = cell_ptr->id;
+            copy.nets[i].cell_list.push_back(copy.cell_map.at(id));
+        }
+    }
+    for (int i = 0; i < cells.size(); ++i) {
+        for (const auto& net_ptr : cells[i].net_list) {
+            string id = net_ptr->id;
+            copy.cells[i].net_list.push_back(copy.net_map.at(id));
+        }
+    }
+    return copy;
+}
+
+
 // info error check
 void Info::print_cell_vector(){
     for (auto& cell: cells){
@@ -251,8 +296,10 @@ FM_BucketList::FM_BucketList(Info& info){
     for (auto& cell: info.cells){   
         insert(&cell , cell.current_tech);
     }
+    max_gain = 0;
+    max_index = -1;
 }
-
+// FM basic op.
 void FM_BucketList::insert(Cell* cell, string tech){
     if (tech == "DieA"){
         bucketA[cell->gain].push_back(cell);
@@ -317,6 +364,12 @@ void FM_BucketList::remove(Cell* cell){
 
 }
 
+void FM_BucketList::update_gain(Cell* cell, long long gain){
+    remove(cell);
+    cell ->gain = gain;
+    insert(cell, cell->current_tech);
+}
+// FM error check
 void FM_BucketList::printf_bucket(string tech){
     map<long long, deque<Cell*>, greater<long long>>* def_bucket;
     if (tech == "DieA"){
@@ -339,8 +392,58 @@ void FM_BucketList::printf_bucket(string tech){
     cout << "-----------------------------" << endl;
 }
 
-void FM_BucketList::update_gain(Cell* cell, long long gain){
-    remove(cell);
-    cell ->gain = gain;
-    insert(cell, cell->current_tech);
+// FM algo func.
+Cell* FM_BucketList::select_move_cell(const Info& info){
+    /* 
+        return : the chosen valid cell & change the current area in both die
+        if no valid cell : return nullptr
+    */
+    const Die& dieA = info.dies[0];
+    const Die& dieB = info.dies[1];
+
+    Cell* select_cell = nullptr;
+    long long best_gain = LLONG_MIN;
+
+    // Find max valid gain cell in dieA
+    for (const auto& [gain, cell_list]: bucketA){
+        for (Cell* cell: cell_list){
+            if (cell->locked) continue;
+
+            if (dieB.current_area + cell->size_in_die_B <= dieB.area_max){
+                if (gain > best_gain){
+                    select_cell = cell;
+                    best_gain = gain;
+                    break;
+                }
+            }
+        }
+        if (select_cell) break;
+    }
+    // Find max valid gain cell in dieB
+    int flag = 0;
+    for (const auto& [gain, cell_list]: bucketB){
+        if (gain < best_gain) {
+            break; // means no way better than dieA
+        }
+        for (Cell* cell: cell_list){
+            if (cell->locked) continue;
+
+            if (dieA.current_area + cell->size_in_die_A <= dieA.area_max){
+                if (gain > best_gain){
+                    select_cell = cell;
+                    best_gain = gain;
+                    flag = 1;
+                    break;
+                }
+            }
+        }
+        if (flag == 1) break; // means find better gain
+    }
+
+    
+    return select_cell;
+}
+
+void FM_BucketList::FM(const Info& info){
+
 }
