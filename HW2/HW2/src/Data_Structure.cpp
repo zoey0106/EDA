@@ -73,7 +73,7 @@ Net::Net(string name, vector<Cell*> cells, long long weight){
 
 // info 
 Info::Info(){
-    
+    cut_size = 0;
 }
 // info get val.
 int Info::get_std_cell_size(string Lib, string LibCell){
@@ -295,6 +295,7 @@ FM_BucketList::FM_BucketList(){}
 FM_BucketList::FM_BucketList(Info& info){
     for (auto& cell: info.cells){   
         insert(&cell , cell.current_tech);
+        cell.locked = false;
     }
     max_gain = 0;
     max_index = -1;
@@ -483,12 +484,12 @@ void FM_BucketList::select_cell_switch_die(Cell* cell){
     remove(cell);
     if (cell->current_tech == "DieA"){
         cell->current_tech = "DieB";
-        // insert(cell, "DieB");
+        insert(cell, "DieB");
     }
     else {
         cell->current_tech = "DieA";
         // maybe don't need insert back?
-        // insert(cell, "DieA");
+        insert(cell, "DieA");
     }
 }
 
@@ -529,7 +530,7 @@ bool FM_BucketList::update_gain(Info& info){
         for (auto& net: cell->net_list){
             update_gain_before_move(info, cell_init_tech, net);
         }
-        select_cell_switch_die(cell); // 沒有insert回bucket
+        select_cell_switch_die(cell); 
         for (auto& net: cell->net_list){
             update_gain_after_move(info, cell_init_tech, net);
         }
@@ -539,19 +540,60 @@ bool FM_BucketList::update_gain(Info& info){
 }
 
 long long FM_BucketList::compute_max_gain(){
-    
+    long long total_gain = 0;
+    max_gain = LLONG_MIN;
+    max_index = -1;
+    for (int i = 0; i < gain_sequence.size(); ++i) {
+        total_gain += gain_sequence[i];
+        if (total_gain > max_gain) {
+            max_gain = total_gain;
+            max_index = i;
+        }
+    }
+    return max_gain;
 }
 
 void FM_BucketList::rollback(Info& info){
-
+    for (int i = max_index + 1; i < move_squence.size(); ++i) {
+        Cell* cell = move_squence[i];
+        if (cell->current_tech == info.dies[0].name) {
+            cell->current_tech = info.dies[1].name;
+            info.dies[0].current_area -= cell->size_in_die_A;
+            info.dies[1].current_area += cell->size_in_die_B;
+        } else {
+            cell->current_tech = info.dies[0].name;
+            info.dies[1].current_area -= cell->size_in_die_B;
+            info.dies[0].current_area += cell->size_in_die_A;
+        }
+    }
 }
 
-bool FM_BucketList::FM(Info& FM_info, Info& info){
-    while (update_gain(FM_info)){}
+void FM_BucketList::cut_size(Info& info){
+    long long cut = 0;
+    for (const auto& net : info.nets) {
+        string tech = "";
+        bool cross = false;
+        for (const auto& cell : net.cell_list) {
+            if (tech.empty()) tech = cell->current_tech;
+            if (cell->current_tech != tech) {
+                cross = true;
+                break;
+            }
+        }
+        if (cross) cut += net.net_weight;
+    }
+    cout << "Final cutsize = " << cut << endl;
+    info.cut_size = cut;
+}
+
+bool FM_BucketList::FM(Info& info){
+    while (update_gain(info)){}
     if (compute_max_gain() > 0){
         rollback(info);
+        cut_size(info);
         return true;
     }
+    cout << "Pass over! : G_k <= 0 " << endl;
     return false;
 }
 

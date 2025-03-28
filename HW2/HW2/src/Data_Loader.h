@@ -6,4 +6,5 @@ using namespace std;
 #include "Data_Structure.h"
 ifstream read_file(string filename);
 void build_data_structure(Info &info, ifstream &input);
+void write_output(const Info& info, string filename);
 #endif

@@ -161,3 +161,43 @@ ifstream read_file(string filename){
 
     return input;
 }
+
+void write_output(const Info& info, string filename){
+    /*
+    Func: Write PATH "../output/filename"
+    Input: string filename 
+    */
+    string output_file_path = string(OUTPUT_DIR) + "/" + filename + ".out";
+    ofstream fout(output_file_path);
+
+    // WARNING
+    if (!fout.is_open()){
+        cout << "Output file opening failed";
+        cout << "File path_name: " << output_file_path;
+        exit(1);
+    }
+    fout << "CutSize " << info.cut_size << endl;
+
+    vector<string> dieA_cells;
+    vector<string> dieB_cells;
+
+    for (const auto& cell : info.cells) {
+        if (cell.current_tech == "DieA") dieA_cells.push_back(cell.id);
+        else if (cell.current_tech == "DieB") dieB_cells.push_back(cell.id);
+    }
+
+    // Write DieA
+    fout << "DieA " << dieA_cells.size() << endl;
+    for (const auto& id : dieA_cells) {
+        fout << id << endl;
+    }
+
+    // Write DieB
+    fout << "DieB " << dieB_cells.size() << endl;
+    for (const auto& id : dieB_cells) {
+        fout << id << endl;
+    }
+
+    fout.close();
+
+}

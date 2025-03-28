@@ -71,6 +71,7 @@ class Info{
         vector<Cell*> cells_to_sort; //for sorting 
         unordered_map<string, Cell*> cell_map;
         unordered_map<string, Net*> net_map;
+        long long cut_size;
 
         // Get val. func.
         int get_std_cell_size(string Lib, string LibCell); 
@@ -111,7 +112,7 @@ class FM_BucketList{
         // error check
         void printf_bucket(string tech);
         // FM op
-        bool FM(Info& FM_info, Info& info); // wrap FM algo.
+        bool FM(Info& info); // wrap FM algo.
         bool update_gain(Info& info); // T: found valid cell to update
         void update_gain_before_move(Info& info, string tech, Net* net);
         void select_cell_switch_die(Cell* cell);
@@ -120,6 +121,7 @@ class FM_BucketList{
         // FM output
         long long compute_max_gain();
         void rollback(Info& info);
+        void cut_size(Info& info);
 };
 
 
