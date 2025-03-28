@@ -68,6 +68,7 @@ class Info{
         vector<Cell> cells;
         vector<Die> dies;
         vector<Tech> tech_list;
+        vector<Cell*> cells_to_sort; //for sorting 
         unordered_map<string, Cell*> cell_map;
         unordered_map<string, Net*> net_map;
 

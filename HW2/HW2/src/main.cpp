@@ -19,6 +19,7 @@ int main(int argc, char *argv[]){
     // FM algo.
     info.gain_initialize(); // Initial gain
     FM_BucketList Bucket(info); // Init Bucket
+    
     Bucket.printf_bucket("DieA");
     return 0;
 }

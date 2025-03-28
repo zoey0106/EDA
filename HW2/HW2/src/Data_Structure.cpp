@@ -133,6 +133,11 @@ void Info::initialize(){
 }
 
 void Info::die_initialize(){
+    /* initial cells_to_sort */
+    for (auto& cell: cells){
+        cell_map[cell.id] = &cell;
+        cells_to_sort.push_back(&cell);
+    }
     /* Initialize die partition*/
     string Lib_A = tech_list[0].tech_name;
     string Lib_B =  tech_list[1].tech_name;
@@ -143,8 +148,8 @@ void Info::die_initialize(){
         cell.size_in_die_B = get_std_cell_size(Lib_B,cell.cell_type);
     }
 
-    sort(cells.begin(), cells.end(),[&](const Cell& A, const Cell& B){
-        return max(A.size_in_die_A ,A.size_in_die_B) > max(B.size_in_die_A ,B.size_in_die_B);
+    sort(cells_to_sort.begin(), cells_to_sort.end(),[&](const Cell* A, const Cell* B){
+        return max(A->size_in_die_A ,A->size_in_die_B) > max(B->size_in_die_A ,B->size_in_die_B);
     });
 
     long long dieA_area = 0;
@@ -152,15 +157,15 @@ void Info::die_initialize(){
     long long dieA_max_area = dies[0].area_max;
     long long dieB_max_area = dies[1].area_max;
 
-    for (auto& cell: cells){
+    for (Cell* cell: cells_to_sort){
         
-        if ((dieA_area + cell.size_in_die_A ) <= dieA_max_area){
-            dieA_area += cell.size_in_die_A;
-            cell.current_tech = dies[0].name;
+        if ((dieA_area + cell->size_in_die_A ) <= dieA_max_area){
+            dieA_area += cell->size_in_die_A;
+            cell->current_tech = dies[0].name;
         }
-        else if((dieB_area + cell.size_in_die_B ) <= dieB_max_area){
-            dieB_area += cell.size_in_die_B;
-            cell.current_tech = dies[1].name;
+        else if((dieB_area + cell->size_in_die_B ) <= dieB_max_area){
+            dieB_area += cell->size_in_die_B;
+            cell->current_tech = dies[1].name;
         }
         else{
             cerr << "Initialize die FAIL!" << endl;
