@@ -107,12 +107,19 @@ class FM_BucketList{
         Cell* get_max_gain_cell(string tech);
         void remove(Cell* cell);
         bool empty(string tech) const;
-        void update_gain(Cell* cell, long long gain);
+        void update_cell_gain(Cell* cell);
         // error check
         void printf_bucket(string tech);
         // FM op
-        void FM(const Info& info); // wrap FM algo.
-        Cell* select_move_cell(const Info& info);
+        bool FM(Info& FM_info, Info& info); // wrap FM algo.
+        bool update_gain(Info& info); // T: found valid cell to update
+        void update_gain_before_move(Info& info, string tech, Net* net);
+        void select_cell_switch_die(Cell* cell);
+        void update_gain_after_move(Info& info, string tech, Net* net);
+        Cell* select_move_cell(Info& info);
+        // FM output
+        long long compute_max_gain();
+        void rollback(Info& info);
 };
 
 

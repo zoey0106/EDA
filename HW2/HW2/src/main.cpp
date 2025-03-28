@@ -18,16 +18,12 @@ int main(int argc, char *argv[]){
     info.initialize(); // Compelete info
     info.gain_initialize(); // Initial gain
     // FM algo.
-    // until G_K <= 0
-
     while(1){
         Info FM_info = info.clone();
         FM_BucketList Bucket(FM_info); // Init Bucket
-        Bucket.FM(FM_info); // based on FM info to mimic transaction
-
-
-        break;
+        if(!Bucket.FM(FM_info, info)){
+            break; // F: G_k <= 0
+        } // based on FM_info to mimic transaction and show the results in info
     }
-
     return 0;
 }

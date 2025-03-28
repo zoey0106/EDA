@@ -361,12 +361,10 @@ void FM_BucketList::remove(Cell* cell){
             bucket.erase(gain_bucket);
         }
     }
-
 }
 
-void FM_BucketList::update_gain(Cell* cell, long long gain){
+void FM_BucketList::update_cell_gain(Cell* cell){
     remove(cell);
-    cell ->gain = gain;
     insert(cell, cell->current_tech);
 }
 // FM error check
@@ -393,13 +391,13 @@ void FM_BucketList::printf_bucket(string tech){
 }
 
 // FM algo func.
-Cell* FM_BucketList::select_move_cell(const Info& info){
+Cell* FM_BucketList::select_move_cell(Info& info){
     /* 
         return : the chosen valid cell & change the current area in both die
         if no valid cell : return nullptr
     */
-    const Die& dieA = info.dies[0];
-    const Die& dieB = info.dies[1];
+    Die& dieA = info.dies[0];
+    Die& dieB = info.dies[1];
 
     Cell* select_cell = nullptr;
     long long best_gain = LLONG_MIN;
@@ -439,11 +437,121 @@ Cell* FM_BucketList::select_move_cell(const Info& info){
         }
         if (flag == 1) break; // means find better gain
     }
-
-    
+    // change both die area based on chosen cell
+    if (select_cell){
+        if (flag == 0){ // dieA -> dieB
+            dieA.current_area -= select_cell->size_in_die_A;
+            dieB.current_area += select_cell->size_in_die_B;
+        }
+        else if (flag == 1){ // dieB -> dieA
+            dieA.current_area += select_cell->size_in_die_A;
+            dieB.current_area -= select_cell->size_in_die_B;
+        }
+    }
     return select_cell;
 }
 
-void FM_BucketList::FM(const Info& info){
+void FM_BucketList::update_gain_before_move(Info& info, string tech, Net* net){
+    long long T = 0;
+    for (auto& net_cell: net->cell_list){
+        if (net_cell->current_tech != tech){
+           T++;
+           if (T > 1){
+                break; //means no update
+           }
+        }
+    }
+    if (T == 0){
+        for (auto& net_cell: net->cell_list){   
+            net_cell->gain++;
+            update_cell_gain(net_cell);
+        }
+    }
+    else if (T == 1){
+        for (auto& net_cell: net->cell_list){
+            if (net_cell->current_tech != tech){
+               net_cell->gain--;
+               update_cell_gain(net_cell);
+               break; // only one
+            }
+        }
+    }
+}
+
+void FM_BucketList::select_cell_switch_die(Cell* cell){
+    /* change cell die */
+    remove(cell);
+    if (cell->current_tech == "DieA"){
+        cell->current_tech = "DieB";
+        // insert(cell, "DieB");
+    }
+    else {
+        cell->current_tech = "DieA";
+        // maybe don't need insert back?
+        // insert(cell, "DieA");
+    }
+}
+
+void FM_BucketList::update_gain_after_move(Info& info, string tech, Net* net){
+    long long F = 0;
+    for (auto& net_cell: net->cell_list){
+        if (net_cell->current_tech == tech){
+           F++;
+           if (F > 1){
+                break; //means no update
+           }
+        }
+    }
+    if (F == 0){
+        for (auto& net_cell: net->cell_list){
+            net_cell->gain--;
+            update_cell_gain(net_cell);
+        }
+    }
+    else if (F == 1){
+        for (auto& net_cell: net->cell_list){
+            if (net_cell->current_tech == tech){
+               net_cell->gain++;
+               update_cell_gain(net_cell);
+               break; // only one
+            }
+        }
+    }
+}
+
+bool FM_BucketList::update_gain(Info& info){
+    Cell* cell = select_move_cell(info);
+    if (cell){
+        cell->locked = true;
+        gain_sequence.push_back(cell->gain);
+        move_squence.push_back(cell);
+        string cell_init_tech = cell->current_tech;
+        for (auto& net: cell->net_list){
+            update_gain_before_move(info, cell_init_tech, net);
+        }
+        select_cell_switch_die(cell); // 沒有insert回bucket
+        for (auto& net: cell->net_list){
+            update_gain_after_move(info, cell_init_tech, net);
+        }
+        return true;
+    }
+    return false;
+}
+
+long long FM_BucketList::compute_max_gain(){
+    
+}
+
+void FM_BucketList::rollback(Info& info){
 
 }
+
+bool FM_BucketList::FM(Info& FM_info, Info& info){
+    while (update_gain(FM_info)){}
+    if (compute_max_gain() > 0){
+        rollback(info);
+        return true;
+    }
+    return false;
+}
+
