@@ -178,10 +178,20 @@ void write_output(Info& info, string filename){
     }
     // info.cut_size_compute();
     fout << "CutSize " << info.cut_size << endl;
-    
+    long long dieA_num = 0;
+    long long dieB_num = 0;
+
+    for (const auto& cell : info.cells) {
+        if (cell.current_tech == "DieA")  dieA_num++;
+    }
+    fout << "DieA "<< dieA_num << endl;
     for (const auto& cell : info.cells) {
         if (cell.current_tech == "DieA")  fout << cell.id << endl;
     }
+    for (const auto& cell : info.cells) {
+        if (cell.current_tech == "DieB")  dieB_num++;
+    }
+    fout << "DieB "<< dieB_num << endl;
     for (const auto& cell : info.cells) {
         if (cell.current_tech == "DieB")  fout << cell.id << endl;
     }

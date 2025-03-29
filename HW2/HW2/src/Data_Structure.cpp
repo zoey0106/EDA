@@ -351,8 +351,9 @@ void FM_BucketList::remove(Cell* cell){
     }
 }
 
-void FM_BucketList::update_cell_gain(Cell* cell){
+void FM_BucketList::update_cell_gain(Cell* cell, long long new_gain){
     remove(cell);
+    cell->gain = new_gain;
     insert(cell, cell->current_tech);
 }
 // FM error check
@@ -451,15 +452,13 @@ void FM_BucketList::update_gain_before_move(Info& info, string tech, Net* net){
     }
     if (T == 0){
         for (auto& net_cell: net->cell_list){   
-            net_cell->gain+= net->net_weight;
-            update_cell_gain(net_cell);
+            update_cell_gain(net_cell, net_cell->gain+net->net_weight);
         }
     }
     else if (T == 1){
         for (auto& net_cell: net->cell_list){
             if (net_cell->current_tech != tech){
-               net_cell->gain-= net->net_weight;
-               update_cell_gain(net_cell);
+               update_cell_gain(net_cell, net_cell->gain-net->net_weight);
                break; // only one
             }
         }
@@ -492,15 +491,13 @@ void FM_BucketList::update_gain_after_move(Info& info, string tech, Net* net){
     }
     if (F == 0){
         for (auto& net_cell: net->cell_list){
-            net_cell->gain-= net->net_weight;
-            update_cell_gain(net_cell);
+            update_cell_gain(net_cell, net_cell->gain-net->net_weight);
         }
     }
     else if (F == 1){
         for (auto& net_cell: net->cell_list){
             if (net_cell->current_tech == tech){
-               net_cell->gain+= net->net_weight;
-               update_cell_gain(net_cell);
+               update_cell_gain(net_cell, net_cell->gain+net->net_weight);
                break; // only one
             }
         }

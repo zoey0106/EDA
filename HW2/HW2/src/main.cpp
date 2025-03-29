@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
         FM_BucketList Bucket(info); // Init Bucket
         /* records */
         final_info = info;
-        if(!Bucket.FM(info, 5, 5, 400)){ 
+        if(!Bucket.FM(info, 2, 10, 200)){ // 5 5 400
             /* 
                 p2: Max rounds of negative val. partial gain 
                 p3: Max rounds of negative val. gain

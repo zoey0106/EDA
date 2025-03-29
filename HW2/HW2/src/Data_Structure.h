@@ -107,7 +107,7 @@ class FM_BucketList{
         void insert(Cell* cell, string tech);
         Cell* get_max_gain_cell(string tech);
         void remove(Cell* cell);
-        void update_cell_gain(Cell* cell);
+        void update_cell_gain(Cell* cell, long long new_gain);
         // error check
         void printf_bucket(string tech);
         // FM op
