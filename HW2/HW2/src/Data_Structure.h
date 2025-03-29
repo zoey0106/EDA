@@ -121,7 +121,7 @@ class FM_BucketList{
         // FM output
         long long compute_max_gain();
         void rollback(Info& info);
-        void cut_size(Info& info);
+        long long cut_size(Info& info);
 };
 
 

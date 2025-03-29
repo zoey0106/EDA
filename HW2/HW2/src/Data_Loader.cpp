@@ -179,21 +179,6 @@ void write_output(const Info& info, string filename){
     }
     
     fout << "CutSize " << info.cut_size << endl;
-    
-//    long long cut = 0;
-//    for (const auto& net : info.nets) {
-//        string tech = "";
-//        bool cross = false;
-//        for (const auto& cell : net.cell_list) {
-//            if (tech.empty()) tech = cell->current_tech;
-//            if (cell->current_tech != tech) {
-//                cross = true;
-//                break;
-//            }
-//        }
-//        if (cross) cut += net.net_weight;
-//    }
-//    fout << "CutSize " << cut << endl;
 
     vector<string> dieA_cells;
     vector<string> dieB_cells;

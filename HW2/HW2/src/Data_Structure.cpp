@@ -201,10 +201,10 @@ void Info::gain_initialize(){
                     if (F > 1 && T > 0) break;
                 }
                 if (F == 1){
-                    cell.gain++;
+                    cell.gain+= info_net->net_weight;
                 }
                 if (T == 0){
-                    cell.gain--;
+                    cell.gain-= info_net->net_weight;
                 }
             }
         }
@@ -464,14 +464,14 @@ void FM_BucketList::update_gain_before_move(Info& info, string tech, Net* net){
     }
     if (T == 0){
         for (auto& net_cell: net->cell_list){   
-            net_cell->gain++;
+            net_cell->gain+= net->net_weight;
             update_cell_gain(net_cell);
         }
     }
     else if (T == 1){
         for (auto& net_cell: net->cell_list){
             if (net_cell->current_tech != tech){
-               net_cell->gain--;
+               net_cell->gain-= net->net_weight;
                update_cell_gain(net_cell);
                break; // only one
             }
@@ -505,14 +505,14 @@ void FM_BucketList::update_gain_after_move(Info& info, string tech, Net* net){
     }
     if (F == 0){
         for (auto& net_cell: net->cell_list){
-            net_cell->gain--;
+            net_cell->gain-= net->net_weight;
             update_cell_gain(net_cell);
         }
     }
     else if (F == 1){
         for (auto& net_cell: net->cell_list){
             if (net_cell->current_tech == tech){
-               net_cell->gain++;
+               net_cell->gain+= net->net_weight;
                update_cell_gain(net_cell);
                break; // only one
             }
@@ -543,6 +543,7 @@ long long FM_BucketList::compute_max_gain(){
     long long total_gain = 0;
     max_gain = LLONG_MIN;
     max_index = -1;
+    
     for (int i = 0; i < gain_sequence.size(); ++i) {
         total_gain += gain_sequence[i];
         if (total_gain > max_gain) {
@@ -550,6 +551,7 @@ long long FM_BucketList::compute_max_gain(){
             max_index = i;
         }
     }
+    cout << "gian : " << max_gain << endl;
     return max_gain;
 }
 
@@ -568,7 +570,7 @@ void FM_BucketList::rollback(Info& info){
     }
 }
 
-void FM_BucketList::cut_size(Info& info){
+long long FM_BucketList::cut_size(Info& info){
     long long cut = 0;
     for (const auto& net : info.nets) {
         string tech = "";
@@ -582,12 +584,15 @@ void FM_BucketList::cut_size(Info& info){
         }
         if (cross) cut += net.net_weight;
     }
-    cout << "Final cutsize = " << cut << endl;
     info.cut_size = cut;
+    cout << "FM_cut : " << cut << endl;
+    return cut;
 }
 
 bool FM_BucketList::FM(Info& info){
+
     while (update_gain(info)){}
+    // printf the rounds and the max_gain_index
     if (compute_max_gain() > 0){
         rollback(info);
         cut_size(info);
