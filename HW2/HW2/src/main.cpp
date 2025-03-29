@@ -19,6 +19,7 @@ int main(int argc, char *argv[]){
     ifstream input = read_file(argv[1]);
     build_data_structure(info, input); // Initial info
     info.die_initialize(); // Initial die partition
+    //info.weighted_die_initialize();
     info.initialize(); // Compelete info
     // FM algo.
     int pass = 0;
@@ -30,7 +31,11 @@ int main(int argc, char *argv[]){
         FM_BucketList Bucket(info); // Init Bucket
         /* records */
         final_info = info;
-        if(!Bucket.FM(info, 100)){ // 100 : 1~4 OK
+        if(!Bucket.FM(info, 10, 10, 1000)){ 
+            /* 
+                p2: 100 -> 1~4 OK   Max rounds of negative val. partial gain 
+                p3: 1000 -> 1~4 OK   Max rounds of negative val. gain
+            */ 
             break; // F: G_k <= 0
         }
         pass++;

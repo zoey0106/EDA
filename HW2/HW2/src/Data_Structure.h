@@ -77,8 +77,11 @@ class Info{
         int get_std_cell_size(string Lib, string LibCell); 
         Cell find_cell(string cell_name);
         Net find_net(string net_name);
+        // Die Initialization method
+        void die_initialize(); //1 
+        void weighted_die_initialize(); //2: put smaller_size die 
+
         // Initialization
-        void die_initialize();
         void initialize();
         void gain_initialize();
         void reset();
@@ -103,7 +106,6 @@ class FM_BucketList{
         long long max_gain;
         int max_index;
         long long partial_sum; // accelerate 1
-
         // basic bucketlist op.
         void insert(Cell* cell, string tech);
         Cell* get_max_gain_cell(string tech);
@@ -113,7 +115,7 @@ class FM_BucketList{
         // error check
         void printf_bucket(string tech);
         // FM op
-        bool FM(Info& info, int restrict_rounds); // wrap FM algo.
+        bool FM(Info& info, int max_neg_partial, int max_neg_gain, int max_abandon_round); // wrap FM algo.
         bool update_gain(Info& info); // T: found valid cell to update
         void update_gain_before_move(Info& info, string tech, Net* net);
         void select_cell_switch_die(Cell* cell);

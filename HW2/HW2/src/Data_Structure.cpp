@@ -181,6 +181,60 @@ void Info::die_initialize(){
 
 }
 
+void Info::weighted_die_initialize(){
+    /* For Die initialization: accelerate*/
+    /* initial cells_to_sort */
+    for (auto& cell: cells){
+        cell_map[cell.id] = &cell;
+        cells_to_sort.push_back(&cell);
+    }
+
+    /* Initialize die partition*/
+    string Lib_A = tech_list[0].tech_name;
+    string Lib_B =  tech_list[1].tech_name;
+
+    for(auto& cell: cells){
+        cell.size_in_die_A = get_std_cell_size(Lib_A,cell.cell_type);
+        cell.size_in_die_B = get_std_cell_size(Lib_B,cell.cell_type);
+    }
+
+    sort(cells_to_sort.begin(), cells_to_sort.end(),[&](const Cell* A, const Cell* B){
+        return abs(A->size_in_die_A - A->size_in_die_B) > abs(B->size_in_die_A - B->size_in_die_B);
+    });
+
+    long long dieA_area = 0;
+    long long dieB_area = 0;
+    long long dieA_max_area = dies[0].area_max;
+    long long dieB_max_area = dies[1].area_max;
+
+    for (Cell* cell: cells_to_sort){
+        bool prefer_A = cell->size_in_die_A < cell->size_in_die_B;
+        if (prefer_A && dieA_area + cell->size_in_die_A <= dieA_max_area) {
+            cell->current_tech = dies[0].name;
+            dieA_area += cell->size_in_die_A;
+        } else if (!prefer_A && dieB_area + cell->size_in_die_B <= dieB_max_area) {
+            cell->current_tech = dies[1].name;
+            dieB_area += cell->size_in_die_B;
+        } else if (dieA_area + cell->size_in_die_A <= dieA_max_area) {
+            cell->current_tech = dies[0].name;
+            dieA_area += cell->size_in_die_A;
+        } else if (dieB_area + cell->size_in_die_B <= dieB_max_area) {
+            cell->current_tech = dies[1].name;
+            dieB_area += cell->size_in_die_B;
+        } else {
+            cerr << "Weighted Die Init FAIL!" << endl;
+            exit(-1);
+        }
+    }
+    dies[0].current_area = dieA_area;
+    dies[1].current_area = dieB_area;
+
+    cout << "Initialize die area:" <<endl; 
+    cout << "dieA max area: " << dieA_max_area << "/ dieA area: " << dieA_area <<endl; 
+    cout << "dieB max area: " << dieB_max_area << "/ dieB area: " << dieB_area << endl; 
+
+}
+
 void Info::gain_initialize(){
     
     for (auto& cell: cells){
@@ -485,12 +539,12 @@ void FM_BucketList::select_cell_switch_die(Cell* cell){
     remove(cell);
     if (cell->current_tech == "DieA"){
         cell->current_tech = "DieB";
-        insert(cell, "DieB");
+        //insert(cell, "DieB"); // i dont think we need this
     }
     else {
         cell->current_tech = "DieA";
         // maybe don't need insert back?
-        insert(cell, "DieA");
+        //insert(cell, "DieA");
     }
 }
 
@@ -591,8 +645,9 @@ long long FM_BucketList::cut_size(Info& info){
     return cut;
 }
 
-bool FM_BucketList::FM(Info& info, int restrict_rounds){
+bool FM_BucketList::FM(Info& info, int max_neg_partial, int max_neg_gain, int max_abandon_round){
     int rounds = 0;
+    int downfall = 0;
     while (update_gain(info)){
         // accelerate 1: if partial sum become negative for consecutive "restrict_rounds" -> suspend
         if (partial_sum <= 0){
@@ -600,10 +655,21 @@ bool FM_BucketList::FM(Info& info, int restrict_rounds){
         }
         else{
             rounds = 0;
-        }
-        if (rounds > restrict_rounds){
+        }        
+        if (rounds > max_neg_partial){
             break;
         }
+        // accerlerate 2: if partial sum keep becoming lower
+        if (gain_sequence.back() < 0){
+            downfall++;
+        }
+        else{
+            downfall = 0;
+        }
+        if (downfall > max_neg_gain){
+            break;
+        }
+        // accerlerate 3: restrict abandon rounds
     }
     if (compute_max_gain() > 0){
         cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
