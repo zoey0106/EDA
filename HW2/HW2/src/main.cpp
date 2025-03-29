@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
         FM_BucketList Bucket(info); // Init Bucket
         /* records */
         final_info = info;
-        if(!Bucket.FM(info)){
+        if(!Bucket.FM(info, 100)){ // 100 : 1~4 OK
             break; // F: G_k <= 0
         }
         pass++;

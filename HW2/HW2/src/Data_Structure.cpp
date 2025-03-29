@@ -299,6 +299,7 @@ FM_BucketList::FM_BucketList(Info& info){
     }
     max_gain = 0;
     max_index = -1;
+    partial_sum = 0;
 }
 // FM basic op.
 void FM_BucketList::insert(Cell* cell, string tech){
@@ -526,6 +527,7 @@ bool FM_BucketList::update_gain(Info& info){
         cell->locked = true;
         gain_sequence.push_back(cell->gain);
         move_squence.push_back(cell);
+        partial_sum += cell->gain;  // accelerate 1
         string cell_init_tech = cell->current_tech;
         for (auto& net: cell->net_list){
             update_gain_before_move(info, cell_init_tech, net);
@@ -589,10 +591,22 @@ long long FM_BucketList::cut_size(Info& info){
     return cut;
 }
 
-bool FM_BucketList::FM(Info& info){
-
-    while (update_gain(info)){}
+bool FM_BucketList::FM(Info& info, int restrict_rounds){
+    int rounds = 0;
+    while (update_gain(info)){
+        // accelerate 1: if partial sum become negative for consecutive "restrict_rounds" -> suspend
+        if (partial_sum <= 0){
+            rounds++;
+        }
+        else{
+            rounds = 0;
+        }
+        if (rounds > restrict_rounds){
+            break;
+        }
+    }
     if (compute_max_gain() > 0){
+        cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
         rollback(info);
         cut_size(info);
         return true;

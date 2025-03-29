@@ -102,6 +102,7 @@ class FM_BucketList{
         vector<long long> gain_sequence;
         long long max_gain;
         int max_index;
+        long long partial_sum; // accelerate 1
 
         // basic bucketlist op.
         void insert(Cell* cell, string tech);
@@ -112,7 +113,7 @@ class FM_BucketList{
         // error check
         void printf_bucket(string tech);
         // FM op
-        bool FM(Info& info); // wrap FM algo.
+        bool FM(Info& info, int restrict_rounds); // wrap FM algo.
         bool update_gain(Info& info); // T: found valid cell to update
         void update_gain_before_move(Info& info, string tech, Net* net);
         void select_cell_switch_die(Cell* cell);
