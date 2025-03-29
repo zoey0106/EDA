@@ -592,7 +592,6 @@ long long FM_BucketList::cut_size(Info& info){
 bool FM_BucketList::FM(Info& info){
 
     while (update_gain(info)){}
-    // printf the rounds and the max_gain_index
     if (compute_max_gain() > 0){
         rollback(info);
         cut_size(info);
