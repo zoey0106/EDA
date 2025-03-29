@@ -33,14 +33,11 @@ class Die{
         string tech;
         long long area_max; // need area <= util*area(DieMaxArea)
         long long current_area;
-
-        bool verify_util(); // T : OK
 };
 class Net;
 class Cell{
     public:
         Cell();
-        Cell(const string& cell_id);
         Cell(const string& cell_id, const string& std_cell_name);
         string id;
         string cell_type;
@@ -75,8 +72,6 @@ class Info{
 
         // Get val. func.
         int get_std_cell_size(string Lib, string LibCell); 
-        Cell find_cell(string cell_name);
-        Net find_net(string net_name);
         // Die Initialization method
         void die_initialize(); //1 
         void weighted_die_initialize(); //2: put smaller_size die 
@@ -84,12 +79,12 @@ class Info{
         // Initialization
         void initialize();
         void gain_initialize();
-        void reset();
-        void rebuild_maps();
-        Info clone() const;
         // for error check 
         void print_cell_vector(); 
         void print_net_vector();
+
+        // ans.
+        void cut_size_compute();
 };
 
 class FM_BucketList{
@@ -106,11 +101,12 @@ class FM_BucketList{
         long long max_gain;
         int max_index;
         long long partial_sum; // accelerate 1
+        long long max_gain_unchange; // accelerate 2
+
         // basic bucketlist op.
         void insert(Cell* cell, string tech);
         Cell* get_max_gain_cell(string tech);
         void remove(Cell* cell);
-        bool empty(string tech) const;
         void update_cell_gain(Cell* cell);
         // error check
         void printf_bucket(string tech);

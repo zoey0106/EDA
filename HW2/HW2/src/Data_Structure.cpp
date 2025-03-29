@@ -2,6 +2,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <climits>
 // tech
 Tech::Tech(){
     tech_name = "DefaultName";
@@ -33,23 +34,11 @@ Die::Die(const string& die_name, const string& die_tech, long long condition){
     current_area = 0;
 }
 
-bool Die::verify_util(){
-    if(current_area > area_max){
-        return false;
-    }
-    return true;
-}
-
 // cell
 Cell::Cell(){
     id = "NULL";
     cell_type = "NULL";
     current_tech = "NULL";
-    gain = 0;
-}
-
-Cell::Cell(const string& cell_id){
-    id = cell_id;
     gain = 0;
 }
 
@@ -90,23 +79,6 @@ int Info::get_std_cell_size(string Lib, string LibCell){
     return -1;
 }
 
-Cell Info::find_cell(string cell_name){
-    for (const auto& cell: cells){
-        if (cell.id == cell_name){
-            return cell;
-        }
-    }
-    return Cell();
-}
-
-Net Info::find_net(string net_name){
-    for (const auto& net: nets){
-        if (net.id == net_name){
-            return net;
-        }
-    }
-    return Net();
-}
 // info init.
 void Info::initialize(){
     /*
@@ -265,50 +237,6 @@ void Info::gain_initialize(){
     }
 }
 
-void Info::rebuild_maps(){
-    cell_map.clear();
-    for (auto& cell : cells) {
-        cell_map[cell.id] = &cell;
-    }
-
-    net_map.clear();
-    for (auto& net : nets) {
-        net_map[net.id] = &net;
-    }
-}
-
-Info Info::clone() const {
-    
-    Info copy;
-    copy.dies = dies;
-    copy.tech_list = tech_list;
-    for (const auto& cell : cells) {
-        Cell new_cell = cell;
-        new_cell.net_list.clear();  
-        copy.cells.push_back(new_cell);
-    }
-    for (const auto& net : nets) {
-        Net new_net = net;
-        new_net.cell_list.clear();  
-        copy.nets.push_back(new_net);
-    }
-    copy.rebuild_maps();
-    for (int i = 0; i < nets.size(); ++i) {
-        for (const auto& cell_ptr : nets[i].cell_list) {
-            string id = cell_ptr->id;
-            copy.nets[i].cell_list.push_back(copy.cell_map.at(id));
-        }
-    }
-    for (int i = 0; i < cells.size(); ++i) {
-        for (const auto& net_ptr : cells[i].net_list) {
-            string id = net_ptr->id;
-            copy.cells[i].net_list.push_back(copy.net_map.at(id));
-        }
-    }
-    return copy;
-}
-
-
 // info error check
 void Info::print_cell_vector(){
     for (auto& cell: cells){
@@ -334,13 +262,22 @@ void Info::print_net_vector(){
         cout << endl;
     }
 }
-//info FM algo.
-void Info::reset(){
-    for(auto& cell: cells){
-        cell.gain = 0;
-        cell.locked = false;
+
+void Info::cut_size_compute(){
+    long long cut = 0;
+    for (const auto& net : nets) {
+        string tech = "";
+        bool cross = false;
+        for (const auto& cell : net.cell_list) {
+            if (tech.empty()) tech = cell->current_tech;
+            if (cell->current_tech != tech) {
+                cross = true;
+                break;
+            }
+        }
+        if (cross) cut += net.net_weight;
     }
-    initialize();
+    cut_size = cut;
 }
 
 // FM algo. bucketlist
@@ -351,10 +288,12 @@ FM_BucketList::FM_BucketList(Info& info){
         insert(&cell , cell.current_tech);
         cell.locked = false;
     }
-    max_gain = 0;
+    max_gain = LLONG_MIN;
     max_index = -1;
     partial_sum = 0;
+    max_gain_unchange = 0;
 }
+
 // FM basic op.
 void FM_BucketList::insert(Cell* cell, string tech){
     if (tech == "DieA"){
@@ -363,13 +302,6 @@ void FM_BucketList::insert(Cell* cell, string tech){
     else {
         bucketB[cell->gain].push_back(cell);
     }
-}
-
-bool FM_BucketList::empty(string tech) const {
-    if (tech == "DieA"){
-        return bucketA.empty();
-    }
-    return bucketB.empty();
 }
 
 Cell* FM_BucketList::get_max_gain_cell(string tech){
@@ -461,7 +393,7 @@ Cell* FM_BucketList::select_move_cell(Info& info){
     // Find max valid gain cell in dieA
     for (const auto& [gain, cell_list]: bucketA){
         for (Cell* cell: cell_list){
-            if (cell->locked) continue;
+            if (cell->locked) continue; ///why do I need this?
 
             if (dieB.current_area + cell->size_in_die_B <= dieB.area_max){
                 if (gain > best_gain){
@@ -582,6 +514,13 @@ bool FM_BucketList::update_gain(Info& info){
         gain_sequence.push_back(cell->gain);
         move_squence.push_back(cell);
         partial_sum += cell->gain;  // accelerate 1
+        if (partial_sum > max_gain){ // accelerate 3
+            max_gain = partial_sum;
+            max_gain_unchange = 0;
+        }
+        else {
+            max_gain_unchange++;
+        }
         string cell_init_tech = cell->current_tech;
         for (auto& net: cell->net_list){
             update_gain_before_move(info, cell_init_tech, net);
@@ -670,6 +609,10 @@ bool FM_BucketList::FM(Info& info, int max_neg_partial, int max_neg_gain, int ma
             break;
         }
         // accerlerate 3: restrict abandon rounds
+        if (max_gain_unchange > max_abandon_round){
+            break;
+        }
+
     }
     if (compute_max_gain() > 0){
         cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
