@@ -167,8 +167,7 @@ void write_output(const Info& info, string filename){
     Func: Write PATH "../output/filename"
     Input: string filename 
     */
-    filename = filename.substr(0, filename.rfind(".txt"));
-    string output_file_path = string(OUTPUT_DIR) + "/" + filename + ".out";
+    string output_file_path = string(OUTPUT_DIR) + "/" + filename;
     ofstream fout(output_file_path);
 
     // WARNING

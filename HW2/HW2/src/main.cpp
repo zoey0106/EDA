@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
         pass++;
     }
     // compute final cutsize
-    write_output(final_info, argv[1]);
+    write_output(final_info, argv[2]);
 
     auto end = high_resolution_clock::now(); 
     auto duration = duration_cast<milliseconds>(end - start);
