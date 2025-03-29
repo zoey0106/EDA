@@ -167,6 +167,7 @@ void write_output(const Info& info, string filename){
     Func: Write PATH "../output/filename"
     Input: string filename 
     */
+    filename = filename.substr(0, filename.rfind(".txt"));
     string output_file_path = string(OUTPUT_DIR) + "/" + filename + ".out";
     ofstream fout(output_file_path);
 
@@ -176,7 +177,23 @@ void write_output(const Info& info, string filename){
         cout << "File path_name: " << output_file_path;
         exit(1);
     }
+    
     fout << "CutSize " << info.cut_size << endl;
+    
+//    long long cut = 0;
+//    for (const auto& net : info.nets) {
+//        string tech = "";
+//        bool cross = false;
+//        for (const auto& cell : net.cell_list) {
+//            if (tech.empty()) tech = cell->current_tech;
+//            if (cell->current_tech != tech) {
+//                cross = true;
+//                break;
+//            }
+//        }
+//        if (cross) cut += net.net_weight;
+//    }
+//    fout << "CutSize " << cut << endl;
 
     vector<string> dieA_cells;
     vector<string> dieB_cells;

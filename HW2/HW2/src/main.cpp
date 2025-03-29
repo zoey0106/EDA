@@ -9,6 +9,10 @@ using namespace std;
 using namespace std::chrono;
 
 int main(int argc, char *argv[]){
+    cout << " ---------------------------------------- " << endl;
+    cout << "Test case: " << argv[1] << endl;
+    cout << " ---------------------------------------- " << endl;
+    auto start = high_resolution_clock::now(); 
     // /: add. in linux
     // Data Preprocessing
     Info info; 
@@ -33,6 +37,11 @@ int main(int argc, char *argv[]){
         pass++;
     }
     // compute final cutsize
-    
+    write_output(info, argv[1]);
+
+    auto end = high_resolution_clock::now(); 
+    auto duration = duration_cast<milliseconds>(end - start);
+    cout << "Execution time: " << duration.count() << " ms" << endl;
+    cout << " ---------------------------------------- " << endl;
     return 0;
 }
