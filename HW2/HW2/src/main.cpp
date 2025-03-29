@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     Info final_info;
     long long cut_size;
     while(true){
-        cout << "[FM Pass " << pass << "]" << endl;
+        // cout << "[FM Pass " << pass << "]" << endl;
         info.gain_initialize(); // Initial gain
         FM_BucketList Bucket(info); // Init Bucket
         /* records */
@@ -40,10 +40,14 @@ int main(int argc, char *argv[]){
             break; // F: G_k <= 0
         }
         pass++;
+        auto end = high_resolution_clock::now(); 
+        auto duration = duration_cast<milliseconds>(end - start);
+        if (duration.count()/1000 > 150 ){
+            break;
+        }
     }
     // compute final cutsize
     write_output(final_info, argv[2]);
-
     auto end = high_resolution_clock::now(); 
     auto duration = duration_cast<milliseconds>(end - start);
     cout << "Execution time: " << duration.count()/1000 << " s" << endl;

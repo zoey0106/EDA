@@ -8,9 +8,6 @@
 #include "Data_Loader.h"
 #include "Data_Structure.h" 
 
-#define INPUT_DIR "./testcase"
-#define OUTPUT_DIR "./output"
-
 using namespace std;
 
 vector<string> slice_line(string line){
@@ -149,7 +146,7 @@ ifstream read_file(string filename){
     */
     ifstream input;
     ofstream output;
-    string input_file_path = string(INPUT_DIR) + "/" + filename;
+    string input_file_path = filename;
 
     input.open(input_file_path);
     // WARNING
@@ -167,7 +164,7 @@ void write_output(Info& info, string filename){
     Func: Write PATH "../output/filename"
     Input: string filename 
     */
-    string output_file_path = string(OUTPUT_DIR) + "/" + filename;
+    string output_file_path = filename;
     ofstream fout(output_file_path);
 
     // WARNING

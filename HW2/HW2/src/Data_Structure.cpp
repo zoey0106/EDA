@@ -543,7 +543,7 @@ long long FM_BucketList::compute_max_gain(){
             max_index = i;
         }
     }
-    cout << "gian : " << max_gain << endl;
+    cout << "gain : " << max_gain << endl;
     return max_gain;
 }
 
@@ -577,7 +577,7 @@ long long FM_BucketList::cut_size(Info& info){
         if (cross) cut += net.net_weight;
     }
     info.cut_size = cut;
-    cout << "FM_cut : " << cut << endl;
+    // cout << "FM_cut : " << cut << endl;
     return cut;
 }
 
@@ -612,12 +612,12 @@ bool FM_BucketList::FM(Info& info, int max_neg_partial, int max_neg_gain, int ma
 
     }
     if (compute_max_gain() > 0){
-        cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
+        // cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
         rollback(info);
         cut_size(info);
         return true;
     }
-    cout << "Pass over! : G_k <= 0 " << endl;
+    // cout << "Pass over! : G_k <= 0 " << endl;
     return false;
 }
 
