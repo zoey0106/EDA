@@ -30,18 +30,17 @@ int main(int argc, char *argv[]){
         FM_BucketList Bucket(info); // Init Bucket
         /* records */
         final_info = info;
-        cut_size = info.cut_size;
         if(!Bucket.FM(info)){
             break; // F: G_k <= 0
         }
         pass++;
     }
     // compute final cutsize
-    write_output(info, argv[1]);
+    write_output(final_info, argv[1]);
 
     auto end = high_resolution_clock::now(); 
     auto duration = duration_cast<milliseconds>(end - start);
-    cout << "Execution time: " << duration.count() << " ms" << endl;
+    cout << "Execution time: " << duration.count()/1000 << " s" << endl;
     cout << " ---------------------------------------- " << endl;
     return 0;
 }

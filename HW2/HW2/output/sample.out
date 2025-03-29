@@ -1,11 +1,11 @@
 CutSize 1
-DieA 4
-C1
-C2
-C5
-C8
-DieB 4
+DieA 5
 C3
 C4
+C5
 C6
 C7
+DieB 3
+C1
+C2
+C8
