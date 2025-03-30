@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <climits>
 #include <unordered_set>
-
+#include <cfloat>
+#include <cmath>
 // tech
 Tech::Tech(){
     tech_name = "DefaultName";
@@ -612,13 +613,24 @@ Cell* FM_BucketList::select_move_cell(Info& info){
         if (flag == 0){ // dieA -> dieB
             dieA.current_area -= select_cell->size_in_die_A;
             dieB.current_area += select_cell->size_in_die_B;
+            compute_balance_ratio(info);
         }
         else if (flag == 1){ // dieB -> dieA
             dieA.current_area += select_cell->size_in_die_A;
             dieB.current_area -= select_cell->size_in_die_B;
+            compute_balance_ratio(info);
         }
     }
     return select_cell;
+}
+
+void FM_BucketList::compute_balance_ratio(Info& info){
+    Die& dieA = info.dies[0];
+    Die& dieB = info.dies[1];
+
+    double util_A = (double)dieA.current_area / dieA.area_max;
+    double util_B = (double)dieB.current_area / dieB.area_max;
+    balance_ratio.push_back(fabs(util_A - util_B));
 }
 
 void FM_BucketList::update_gain_before_move(Info& info, string tech, Net* net){
@@ -716,13 +728,22 @@ long long FM_BucketList::compute_max_gain(){
     long long total_gain = 0;
     max_gain = LLONG_MIN;
     max_index = -1;
-    
+    vector<long long> max_gain_steps;
     for (int i = 0; i < gain_sequence.size(); ++i) {
         total_gain += gain_sequence[i];
         if (total_gain > max_gain) {
             max_gain = total_gain;
-            max_index = i;
+            // max_index = i; //delete
+            max_gain_steps.clear();
+            max_gain_steps.push_back(i);
         }
+        else if (total_gain == max_gain){
+            max_gain_steps.push_back(i);
+        }
+    }
+    double min_diff_area = DBL_MAX;
+    for (int i = 0; i < max_gain_steps.size(); i++){
+        if (balance_ratio[max_gain_steps[i]] < min_diff_area) max_index = max_gain_steps[i];
     }
     cout << "gain : " << max_gain << endl;
     return max_gain;
@@ -767,38 +788,21 @@ bool FM_BucketList::FM(Info& info, int max_neg_partial, int max_neg_gain, int ma
     int downfall = 0;
     while (update_gain(info)){
         // accelerate 1: if partial sum become negative for consecutive "restrict_rounds" -> suspend
-        if (partial_sum <= 0){
-            rounds++;
-        }
-        else{
-            rounds = 0;
-        }        
-        if (rounds > max_neg_partial){
-            break;
-        }
+        if (partial_sum <= 0) rounds++;
+        else rounds = 0;        
+        if (rounds > max_neg_partial) break;
         // accerlerate 2: if partial sum keep becoming lower
-        if (gain_sequence.back() < 0){
-            downfall++;
-        }
-        else{
-            downfall = 0;
-        }
-        if (downfall > max_neg_gain){
-            break;
-        }
+        if (gain_sequence.back() < 0) downfall++;
+        else downfall = 0;
+        if (downfall > max_neg_gain) break;
         // accerlerate 3: restrict abandon rounds
-        if (max_gain_unchange > max_abandon_round){
-            break;
-        }
-
+        if (max_gain_unchange > max_abandon_round) break;
     }
     if (compute_max_gain() > 0){
-        // cout << "abandon rounds: " << gain_sequence.size() - max_index -1 << endl; 
         rollback(info);
         cut_size(info);
         return true;
     }
-    // cout << "Pass over! : G_k <= 0 " << endl;
     return false;
 }
 

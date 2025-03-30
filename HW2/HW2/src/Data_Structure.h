@@ -100,6 +100,7 @@ class FM_BucketList{
         /*Records*/
         vector<Cell*> move_squence;
         vector<long long> gain_sequence;
+        vector<double> balance_ratio; 
         long long max_gain;
         int max_index;
         long long partial_sum; // accelerate 1
@@ -123,6 +124,7 @@ class FM_BucketList{
         long long compute_max_gain();
         void rollback(Info& info);
         long long cut_size(Info& info);
+        void compute_balance_ratio(Info& info);
 };
 
 
