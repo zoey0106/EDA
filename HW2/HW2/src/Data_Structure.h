@@ -73,9 +73,12 @@ class Info{
         // Get val. func.
         int get_std_cell_size(string Lib, string LibCell); 
         // Die Initialization method
-        void die_initialize(); //1 
-        void weighted_die_initialize(); //2: put smaller_size die 
-
+        void die_initialize();
+        bool greedy_die_initialize(); //1 
+        bool weighted_die_initialize(); //2: put smaller_size die 
+        bool net_balancing_die_initialize(); // 3: made cut_size bigger but converge faster
+        bool net_balancing_die_force_init(); // 4: force 3
+        Cell* find_swappable_cell(const string& from_die, const string& to_die,long long from_remain_after, long long to_add,long long to_die_max_area, long long to_die_area);
         // Initialization
         void initialize();
         void gain_initialize();

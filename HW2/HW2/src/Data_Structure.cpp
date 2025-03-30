@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <algorithm>
 #include <climits>
+#include <unordered_set>
+
 // tech
 Tech::Tech(){
     tech_name = "DefaultName";
@@ -104,57 +106,53 @@ void Info::initialize(){
     }
 }
 
-void Info::die_initialize(){
-    /* initial cells_to_sort */
-    for (auto& cell: cells){
+bool Info::greedy_die_initialize() {
+    cells_to_sort.clear();
+    for (auto& cell : cells) {
         cell_map[cell.id] = &cell;
         cells_to_sort.push_back(&cell);
     }
-    /* Initialize die partition*/
-    string Lib_A = tech_list[0].tech_name;
-    string Lib_B =  tech_list[1].tech_name;
-    long long prefer_A;
 
-    for(auto& cell: cells){
-        cell.size_in_die_A = get_std_cell_size(Lib_A,cell.cell_type);
-        cell.size_in_die_B = get_std_cell_size(Lib_B,cell.cell_type);
+    string Lib_A = tech_list[0].tech_name;
+    string Lib_B = tech_list[1].tech_name;
+
+    for (auto& cell : cells) {
+        cell.size_in_die_A = get_std_cell_size(Lib_A, cell.cell_type);
+        cell.size_in_die_B = get_std_cell_size(Lib_B, cell.cell_type);
     }
 
-    sort(cells_to_sort.begin(), cells_to_sort.end(),[&](const Cell* A, const Cell* B){
-        return max(A->size_in_die_A ,A->size_in_die_B) > max(B->size_in_die_A ,B->size_in_die_B);
+    sort(cells_to_sort.begin(), cells_to_sort.end(), [&](const Cell* A, const Cell* B) {
+        return max(A->size_in_die_A, A->size_in_die_B) > max(B->size_in_die_A, B->size_in_die_B);
     });
 
-    long long dieA_area = 0;
-    long long dieB_area = 0;
+    long long dieA_area = 0, dieB_area = 0;
     long long dieA_max_area = dies[0].area_max;
     long long dieB_max_area = dies[1].area_max;
 
-    for (Cell* cell: cells_to_sort){
-        
-        if ((dieA_area + cell->size_in_die_A ) <= dieA_max_area){
-            dieA_area += cell->size_in_die_A;
+    for (Cell* cell : cells_to_sort) {
+        if (dieA_area + cell->size_in_die_A <= dieA_max_area) {
             cell->current_tech = dies[0].name;
-        }
-        else if((dieB_area + cell->size_in_die_B ) <= dieB_max_area){
-            dieB_area += cell->size_in_die_B;
+            dieA_area += cell->size_in_die_A;
+        } else if (dieB_area + cell->size_in_die_B <= dieB_max_area) {
             cell->current_tech = dies[1].name;
-        }
-        else{
-            cerr << "Initialize die FAIL!" << endl;
-            exit(-1);
+            dieB_area += cell->size_in_die_B;
+        } else {
+            cerr << "[Greedy Init] FAIL: Cell " << cell->id << " cannot fit." << endl;
+            return false;
         }
     }
+
     dies[0].current_area = dieA_area;
     dies[1].current_area = dieB_area;
 
-    cout << "Initialize die area:" <<endl; 
-    cout << "dieA max area: " << dieA_max_area << "/ dieA area: " << dieA_area <<endl; 
-    cout << "dieB max area: " << dieB_max_area << "/ dieB area: " << dieB_area << endl; 
+    cout << "[Greedy Init] dieA: " << dieA_area << "/" << dieA_max_area
+         << ", dieB: " << dieB_area << "/" << dieB_max_area << endl;
 
+    return true;
 }
 
-void Info::weighted_die_initialize(){
-    /* For Die initialization: accelerate*/
+bool Info::weighted_die_initialize(){
+    cells_to_sort.clear();
     /* initial cells_to_sort */
     for (auto& cell: cells){
         cell_map[cell.id] = &cell;
@@ -179,7 +177,11 @@ void Info::weighted_die_initialize(){
     long long dieA_max_area = dies[0].area_max;
     long long dieB_max_area = dies[1].area_max;
 
-    for (Cell* cell: cells_to_sort){
+    for (Cell* cell : cells_to_sort) {
+        if (cell->size_in_die_A > dieA_max_area && cell->size_in_die_B > dieB_max_area) {
+            cerr << "[Filter FAIL] Cell " << cell->id << " too large for both dies." << endl;
+            return false;
+        }
         bool prefer_A = cell->size_in_die_A < cell->size_in_die_B;
         if (prefer_A && dieA_area + cell->size_in_die_A <= dieA_max_area) {
             cell->current_tech = dies[0].name;
@@ -194,17 +196,336 @@ void Info::weighted_die_initialize(){
             cell->current_tech = dies[1].name;
             dieB_area += cell->size_in_die_B;
         } else {
-            cerr << "Weighted Die Init FAIL!" << endl;
-            exit(-1);
+            cerr << "Weighted Init FAIL: Cell " << cell->id << " cannot fit." << endl;
+            return false;
         }
     }
+
+    dies[0].current_area = dieA_area;
+    dies[1].current_area = dieB_area;
+    cout << "[Weighted Init (Filtered)] dieA: " << dieA_area << "/" << dieA_max_area
+         << ", dieB: " << dieB_area << "/" << dieB_max_area << endl;
+    return true;
+
+}
+
+bool Info::net_balancing_die_initialize() {
+    cells_to_sort.clear();
+    // initial cells_to_sort
+    for (auto& cell : cells) {
+        cell_map[cell.id] = &cell;
+        cells_to_sort.push_back(&cell);
+    }
+
+    // Initialize die partition
+    string Lib_A = tech_list[0].tech_name;
+    string Lib_B = tech_list[1].tech_name;
+
+    for (auto& cell : cells) {
+        cell.size_in_die_A = get_std_cell_size(Lib_A, cell.cell_type);
+        cell.size_in_die_B = get_std_cell_size(Lib_B, cell.cell_type);
+    }
+
+    long long dieA_area = 0;
+    long long dieB_area = 0;
+    long long dieA_max_area = dies[0].area_max;
+    long long dieB_max_area = dies[1].area_max;
+
+    unordered_set<string> assigned_cells;
+
+    // Sort nets by net_weight descending
+    sort(nets.begin(), nets.end(), [](const Net& a, const Net& b) {
+        return a.net_weight > b.net_weight;
+    });
+
+    for (auto& net : nets) {
+        vector<Cell*> unassigned_cells;
+        for (auto& cell_ptr : net.cell_list) {
+            Cell* cell = cell_map[cell_ptr->id];
+            if (!assigned_cells.count(cell->id)) {
+                unassigned_cells.push_back(cell);
+            }
+        }
+
+        // Try to assign all unassigned cells in the net to the same die
+        long long cost_A = 0, cost_B = 0;
+        for (Cell* cell : unassigned_cells) {
+            cost_A += cell->size_in_die_A;
+            cost_B += cell->size_in_die_B;
+        }
+
+        if (dieA_area + cost_A <= dieA_max_area) {
+            for (Cell* cell : unassigned_cells) {
+                cell->current_tech = dies[0].name;
+                dieA_area += cell->size_in_die_A;
+                assigned_cells.insert(cell->id);
+            }
+        } else if (dieB_area + cost_B <= dieB_max_area) {
+            for (Cell* cell : unassigned_cells) {
+                cell->current_tech = dies[1].name;
+                dieB_area += cell->size_in_die_B;
+                assigned_cells.insert(cell->id);
+            }
+        }
+        // else skip for now; will assign in fallback
+    }
+
+    // Assign remaining cells
+    for (auto& cell : cells) {
+        if (assigned_cells.count(cell.id)) continue;
+
+        if (dieA_area + cell.size_in_die_A <= dieA_max_area) {
+            cell.current_tech = dies[0].name;
+            dieA_area += cell.size_in_die_A;
+        } else if (dieB_area + cell.size_in_die_B <= dieB_max_area) {
+            cell.current_tech = dies[1].name;
+            dieB_area += cell.size_in_die_B;
+        } else {
+            cerr << "Net-Balancing Init FAIL (weighted): Cell " << cell.id << " cannot fit." << endl;
+            return false;
+        }
+    }
+
     dies[0].current_area = dieA_area;
     dies[1].current_area = dieB_area;
 
-    cout << "Initialize die area:" <<endl; 
-    cout << "dieA max area: " << dieA_max_area << "/ dieA area: " << dieA_area <<endl; 
-    cout << "dieB max area: " << dieB_max_area << "/ dieB area: " << dieB_area << endl; 
+    cout << "[Net-Balancing Init (Weighted)] dieA: " << dieA_area << "/" << dieA_max_area
+         << ", dieB: " << dieB_area << "/" << dieB_max_area << endl;
+    return true;
+}
 
+// Helper: find swappable candidate
+Cell* Info::find_swappable_cell(const string& from_die, const string& to_die,long long from_remain_after, long long to_add,long long to_die_max_area, long long to_die_area) {
+    Cell* best_swap = nullptr;
+    long long min_area_diff = LLONG_MAX;
+
+    for (Cell* other : cells_to_sort) {
+        if (other->current_tech == from_die) {
+            long long from_new_area = from_remain_after;
+            long long to_new_area = to_die_area + to_add;
+
+            if (from_new_area >= 0 && to_new_area <= to_die_max_area) {
+                long long area_diff = other->size_in_die_A + other->size_in_die_B;
+                if (area_diff < min_area_diff) {
+                    min_area_diff = area_diff;
+                    best_swap = other;
+                }
+            }
+        }
+    }
+    return best_swap;
+}
+
+bool Info::net_balancing_die_force_init() {
+    cells_to_sort.clear();
+    for (auto& cell : cells) {
+        cell_map[cell.id] = &cell;
+        cells_to_sort.push_back(&cell);
+    }
+
+    string Lib_A = tech_list[0].tech_name;
+    string Lib_B = tech_list[1].tech_name;
+
+    for (auto& cell : cells) {
+        cell.size_in_die_A = get_std_cell_size(Lib_A, cell.cell_type);
+        cell.size_in_die_B = get_std_cell_size(Lib_B, cell.cell_type);
+    }
+
+    long long dieA_area = 0;
+    long long dieB_area = 0;
+    long long dieA_max_area = dies[0].area_max;
+    long long dieB_max_area = dies[1].area_max;
+
+    unordered_set<string> assigned_cells;
+
+    sort(nets.begin(), nets.end(), [](const Net& a, const Net& b) {
+        return a.net_weight > b.net_weight;
+    });
+
+    for (auto& net : nets) {
+        vector<Cell*> unassigned_cells;
+        for (auto& cell_ptr : net.cell_list) {
+            Cell* cell = cell_map[cell_ptr->id];
+            if (!assigned_cells.count(cell->id)) {
+                unassigned_cells.push_back(cell);
+            }
+        }
+
+        long long cost_A = 0, cost_B = 0;
+        for (Cell* cell : unassigned_cells) {
+            cost_A += cell->size_in_die_A;
+            cost_B += cell->size_in_die_B;
+        }
+
+        if (dieA_area + cost_A <= dieA_max_area) {
+            for (Cell* cell : unassigned_cells) {
+                cell->current_tech = dies[0].name;
+                dieA_area += cell->size_in_die_A;
+                assigned_cells.insert(cell->id);
+            }
+        } else if (dieB_area + cost_B <= dieB_max_area) {
+            for (Cell* cell : unassigned_cells) {
+                cell->current_tech = dies[1].name;
+                dieB_area += cell->size_in_die_B;
+                assigned_cells.insert(cell->id);
+            }
+        }
+    }
+
+    for (auto& cell : cells) {
+        if (assigned_cells.count(cell.id)) continue;
+
+        bool placed = false;
+        if (dieA_area + cell.size_in_die_A <= dieA_max_area) {
+            cell.current_tech = dies[0].name;
+            dieA_area += cell.size_in_die_A;
+            placed = true;
+        } else if (dieB_area + cell.size_in_die_B <= dieB_max_area) {
+            cell.current_tech = dies[1].name;
+            dieB_area += cell.size_in_die_B;
+            placed = true;
+        }
+
+        if (!placed) {
+            cerr << "[Force Init FAIL] Cell " << cell.id << " cannot be placed within area constraints." << endl;
+            return false;
+        }
+    }
+
+    dies[0].current_area = dieA_area;
+    dies[1].current_area = dieB_area;
+
+    cout << "[Net-Balancing Force Init] dieA: " << dieA_area << "/" << dieA_max_area
+         << ", dieB: " << dieB_area << "/" << dieB_max_area << endl;
+    return true;
+}
+
+// bool Info::net_balancing_die_force_init() {
+//     cells_to_sort.clear();
+//     for (auto& cell : cells) {
+//         cell_map[cell.id] = &cell;
+//         cells_to_sort.push_back(&cell);
+//     }
+
+//     string Lib_A = tech_list[0].tech_name;
+//     string Lib_B = tech_list[1].tech_name;
+//     for (auto& cell : cells) {
+//         cell.size_in_die_A = get_std_cell_size(Lib_A, cell.cell_type);
+//         cell.size_in_die_B = get_std_cell_size(Lib_B, cell.cell_type);
+//     }
+
+//     long long dieA_area = 0, dieB_area = 0;
+//     long long dieA_max_area = dies[0].area_max;
+//     long long dieB_max_area = dies[1].area_max;
+
+//     unordered_set<string> assigned;
+
+//     sort(nets.begin(), nets.end(), [](const Net& a, const Net& b) {
+//         return a.net_weight > b.net_weight;
+//     });
+
+//     for (auto& net : nets) {
+//         vector<Cell*> unassigned;
+//         for (auto& cptr : net.cell_list) {
+//             Cell* c = cell_map[cptr->id];
+//             if (!assigned.count(c->id)) unassigned.push_back(c);
+//         }
+
+//         long long cost_A = 0, cost_B = 0;
+//         for (Cell* c : unassigned) {
+//             cost_A += c->size_in_die_A;
+//             cost_B += c->size_in_die_B;
+//         }
+
+//         if (dieA_area + cost_A <= dieA_max_area) {
+//             for (Cell* c : unassigned) {
+//                 c->current_tech = dies[0].name;
+//                 dieA_area += c->size_in_die_A;
+//                 assigned.insert(c->id);
+//             }
+//         } else if (dieB_area + cost_B <= dieB_max_area) {
+//             for (Cell* c : unassigned) {
+//                 c->current_tech = dies[1].name;
+//                 dieB_area += c->size_in_die_B;
+//                 assigned.insert(c->id);
+//             }
+//         }
+//     }
+
+//     for (auto& cell : cells) {
+//         if (assigned.count(cell.id)) continue;
+//         bool placed = false;
+
+//         if (dieA_area + cell.size_in_die_A <= dieA_max_area) {
+//             cell.current_tech = dies[0].name;
+//             dieA_area += cell.size_in_die_A;
+//             placed = true;
+//         } else if (dieB_area + cell.size_in_die_B <= dieB_max_area) {
+//             cell.current_tech = dies[1].name;
+//             dieB_area += cell.size_in_die_B;
+//             placed = true;
+//         } else {
+//             Cell* swap = find_swappable_cell("DieA", "DieB",
+//                 dieA_area - cell.size_in_die_A,
+//                 cell.size_in_die_B,
+//                 dieB_max_area,
+//                 dieB_area);
+
+//             if (swap) {
+//                 swap->current_tech = dies[1].name;
+//                 cell.current_tech = dies[0].name;
+//                 dieA_area = dieA_area - swap->size_in_die_A + cell.size_in_die_A;
+//                 dieB_area += swap->size_in_die_B;
+//                 placed = true;
+//             } else {
+//                 swap = find_swappable_cell("DieB", "DieA",
+//                     dieB_area - cell.size_in_die_B,
+//                     cell.size_in_die_A,
+//                     dieA_max_area,
+//                     dieA_area);
+
+//                 if (swap) {
+//                     swap->current_tech = dies[0].name;
+//                     cell.current_tech = dies[1].name;
+//                     dieB_area = dieB_area - swap->size_in_die_B + cell.size_in_die_B;
+//                     dieA_area += swap->size_in_die_A;
+//                     placed = true;
+//                 }
+//             }
+//         }
+
+//         if (!placed) {
+//             cerr << "[Force Init FAIL] Cell " << cell.id << " cannot be placed." << endl;
+//             return false;
+//         }
+
+//         assigned.insert(cell.id);
+//     }
+
+//     dies[0].current_area = dieA_area;
+//     dies[1].current_area = dieB_area;
+
+//     cout << "[Net-Balancing Init (Forced Optimized)] dieA: " << dieA_area << "/" << dieA_max_area
+//          << ", dieB: " << dieB_area << "/" << dieB_max_area << endl;
+
+//     return true;
+// }
+/// WARNING GOOD but! I dont think I clear the current area?
+
+void Info::die_initialize(){
+    cout << "==== [Trying Net-Balancing Weighted Init] ====" << endl;
+    if (net_balancing_die_initialize()) return;
+
+    cout << "==== [Fallback: Force Net-Balancing Weighted Init] ====" << endl;
+    if (net_balancing_die_force_init()) return;
+
+    cout << "==== [Fallback: Weighted Init With Filtering] ====" << endl;
+    if (weighted_die_initialize()) return;
+
+    cout << "==== [Fallback: Greedy Init] ====" << endl;
+    if (greedy_die_initialize()) return;
+
+    cerr << "[Error] All die initialization strategies failed!" << endl;
 }
 
 void Info::gain_initialize(){
