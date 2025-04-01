@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
         /* p2: Max rounds of negative val. partial gain 
            p3: Max rounds of negative val. gain
            p4: Max abandon rounds         */
-        if(!Bucket.FM(info, 5, 5, 400)){ // 5 5 400 
+        if(!Bucket.FM(info, 5, 5, 500)){ // 5 5 400 
             break; // F: G_k <= 0
         }
         pass++;
