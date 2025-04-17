@@ -6,7 +6,7 @@ LFLAGS=
 LIBS=
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=../bin/hw2
+EXECUTABLE=../bin/hw3
 OBJ_DIR=""
 all: $(SOURCES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS)
