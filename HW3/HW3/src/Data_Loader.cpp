@@ -65,9 +65,9 @@ void build_data_structure(Info& info, ifstream& input){
         for (int i = 0; i < hard_blocks_count; i++){
             getline(input, line);
             tokens = slice_line(line);
-            info.hard_block.push_back(build_hard_blocks_info(input, tokens));
+            info.hard_block_list.push_back(build_hard_blocks_info(input, tokens));
         }
-        for (auto& hard_block: info.hard_block){
+        for (auto& hard_block: info.hard_block_list){
             info.hard_block_map[hard_block.name] = &hard_block;
         }
     };
@@ -77,9 +77,9 @@ void build_data_structure(Info& info, ifstream& input){
         for (int i = 0; i < pad_count; i++){
             getline(input, line);
             tokens = slice_line(line);
-            info.pad.push_back(build_pad_info(input, tokens));
+            info.pad_list.push_back(build_pad_info(input, tokens));
         }
-        for (auto& pad: info.pad){
+        for (auto& pad: info.pad_list){
             info.pad_map[pad.name] = &pad;
         }
     };
@@ -90,10 +90,10 @@ void build_data_structure(Info& info, ifstream& input){
             getline(input, line);
             tokens = slice_line(line);
             if(tokens[0] == "Net"){
-                info.net.push_back(build_net_info(input, tokens, info));
+                info.net_list.push_back(build_net_info(input, tokens, info));
             }
         }
-        for (auto& net: info.net){
+        for (auto& net: info.net_list){
             info.net_map[net.name] = &net;
         }
     };
