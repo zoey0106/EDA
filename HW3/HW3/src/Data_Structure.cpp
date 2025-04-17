@@ -6,6 +6,9 @@
 #include <unordered_set>
 #include <cfloat>
 #include <cmath>
+#include <utility>
+#include <set>
+#include <stack>
 // Net
 Net::Net(string net_name, vector<string> pin_list){
     name = net_name;
@@ -25,6 +28,8 @@ HardBlock::HardBlock(string block_name, long long w, long long h){
     width = w;
     height = h;
     rotate = false;
+    x = -1;
+    y = -1;
 }
 
 // Info
@@ -108,6 +113,30 @@ void Info::initialize(){
 }
 
 // SA algo.
+
+// Area computation for hard blocks
+void Info::calculate_area_and_axis(){
+    stack<set<Shape>> area;
+    bool flag = true;
+
+    for(auto& e: E.expr){
+        if(e.type == PEType::Operand){
+            area.push(e.shape_set);
+            continue;
+        }
+        if(e.type == PEType::H){
+            set<Shape> shape_set;
+            
+            continue;
+        }
+        if(e.type == PEType::V){
+            
+            continue;
+        }
+    }
+}
+
+
 // HPWL
 long long Info::calculate_wiring_length(){
     int wiring_length = 0;

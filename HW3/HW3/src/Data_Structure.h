@@ -7,7 +7,7 @@ using namespace std;
 #include <unordered_map>
 #include <map>
 #include <deque>
-
+#include <set>
 class Net{
     public:
         Net() = default;;
@@ -32,16 +32,43 @@ class HardBlock{
         string name;
         long long width;
         long long height;
+        long long x;
+        long long y;
         bool rotate;
 };
 
 enum class PEType { Operand, H, V };
 
+struct Shape{
+    long long width;
+    long long height;
+    bool rotated; 
+    // trace info
+    string hard_block_name;
+    bool from_operator = false;
+    bool left_rotated = false;
+    bool right_rotated = false;
+    Shape* left_child = nullptr;
+    Shape* right_child = nullptr;
+    
+
+    bool operator<(const Shape& other)const{
+        if (width != other.width) return width < other.width;
+        if (height != other.height) return height < other.height;
+        return rotated < other.rotated;
+    }
+};
+
 struct PEItem {
     PEType type;
     HardBlock* hard_block; // if operand
-
-    PEItem(PEType t, HardBlock* block = nullptr): type(t), hard_block(block){};
+    set<Shape> shape_set;
+    PEItem(PEType t, HardBlock* block = nullptr): type(t), hard_block(block){
+        if(type == PEType::Operand && block != nullptr){
+            shape_set.insert({block->width, block->height, false, block->name});
+            shape_set.insert({block->height,block->width, true, block->name});
+        }
+    };
 };
 
 class PolishExpr{
@@ -75,6 +102,7 @@ class Info{
         void M1_move();
         long long calculate_cost();
         long long calculate_wiring_length();
+        void calculate_area_and_axis();
         // SA initialization 
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
