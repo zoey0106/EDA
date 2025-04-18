@@ -44,10 +44,7 @@ struct Shape{
     long long height;
     bool rotated; 
     // trace info
-    string hard_block_name;
-    bool from_operator = false;
-    bool left_rotated = false;
-    bool right_rotated = false;
+    HardBlock* hard_block;
     Shape* left_child = nullptr;
     Shape* right_child = nullptr;
     
@@ -65,8 +62,8 @@ struct PEItem {
     set<Shape> shape_set;
     PEItem(PEType t, HardBlock* block = nullptr): type(t), hard_block(block){
         if(type == PEType::Operand && block != nullptr){
-            shape_set.insert({block->width, block->height, false, block->name});
-            shape_set.insert({block->height,block->width, true, block->name});
+            shape_set.insert({block->width, block->height, false, block});
+            shape_set.insert({block->height,block->width, true, block});
         }
     };
 };
