@@ -73,7 +73,6 @@ class PolishExpr{
         vector<PEItem> expr; // solution
         PolishExpr() = default;
         PolishExpr(const vector<PEItem>& items): expr(items) {};
-
 };
 
 class Info{
@@ -86,6 +85,9 @@ class Info{
         unordered_map<string, Pad*> pad_map;
         unordered_map<string, HardBlock*> hard_block_map;
         unordered_map<string, Net*> net_map;
+        vector<pair<int, int>> adjacent_operands;
+        vector<pair<int, int>> operator_chains;
+        vector<pair<int, int>> adjacent_op_operands;
         // Termination
         int MT; 
         int reject;
@@ -97,6 +99,9 @@ class Info{
         // SA algo.
         void SA_algo();
         void M1_move();
+        void M2_move();
+        void M3_move();
+        void update_adjacent_operands(int i, int j); // for M2/M3
         long long calculate_cost();
         long long calculate_wiring_length();
         void calculate_area_and_axis();
@@ -104,7 +109,9 @@ class Info{
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
         void initialize();
-
+        void initial_adjacent_operands();
+        void initial_chain_operators();
+        void initial_op_operands();
         // Checkerror
         void print_block(string name);
         void print_pad(string name);

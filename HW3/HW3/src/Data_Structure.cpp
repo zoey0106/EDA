@@ -76,6 +76,43 @@ void Info::print_E(){
     }
 }
 
+void Info::initial_adjacent_operands(){
+    adjacent_operands.clear();
+    for (int i = 0; i < E.expr.size(); i++){
+        if (E.expr[i].type == PEType::Operand && E.expr[i+1].type == PEType::Operand){
+            adjacent_operands.emplace_back(i, i+1);
+        }
+    }
+}
+
+void Info::initial_chain_operators(){
+    operator_chains.clear();
+    int start = -1;
+    for (int i = 0; i < E.expr.size(); i++){
+        if (E.expr[i].type != PEType::Operand){
+            if (start == -1) start = i;
+        }else{
+            if (start != -1){
+                operator_chains.emplace_back(start, i-1); // 1 can be chain too
+            }
+            start = -1;
+        }
+    }
+    if (start != -1){
+        operator_chains.emplace_back(start,  E.expr.size() - 1);
+    }
+}
+
+void Info::initial_op_operands(){
+    adjacent_op_operands.clear();
+    for (int i = 0; i < E.expr.size() - 1; ++i) {
+        if ((E.expr[i].type == PEType::Operand && E.expr[i + 1].type != PEType::Operand) ||
+            (E.expr[i].type != PEType::Operand && E.expr[i + 1].type == PEType::Operand)) {
+            adjacent_op_operands.emplace_back(i, i + 1);
+        }
+    }
+}
+
 // SA algo. init
 void Info::initial_PolishExpr(){
     /*
@@ -98,6 +135,9 @@ void Info::initial_PolishExpr(){
     }
     E.expr = expr;
     best_E = expr;
+    initial_adjacent_operands();
+    initial_chain_operators();
+    initial_op_operands();
 }
 
 double Info::initial_temperature(int sample_size, double p){
@@ -114,6 +154,7 @@ void Info::initialize(){
 
 // SA algo.
 
+// Area computation for hard blocks
 void assign_coordinate(Shape* shape, int x, int y){
     if (!shape) return;
 
@@ -140,7 +181,6 @@ void assign_coordinate(Shape* shape, int x, int y){
     }
 }
 
-// Area computation for hard blocks
 void Info::calculate_area_and_axis(){
     stack<set<Shape>> area;
     bool flag = true;
@@ -186,9 +226,10 @@ void Info::calculate_area_and_axis(){
     assign_coordinate(&best_shape, 0, 0);
 }
 
-
 // HPWL
+// can acclerate to not calculate every block
 long long Info::calculate_wiring_length(){
+    calculate_area_and_axis();
     int wiring_length = 0;
 
     for(auto& net: net_list){
@@ -205,25 +246,82 @@ long long Info::calculate_wiring_length(){
                 y = pad_map[pin_name]->y;
             }else if(hard_block_map.count(pin_name)){
                 const auto& block = hard_block_map[pin_name];
-                // add Area computation -> so x, y in block can be decide
+                
+                int w = block->rotate ? block->height : block->width;
+                int h = block->rotate ? block->width : block->height;
+
+                x = block->x + w/2; // floor
+                y = block->y + h/2;
             }
+            else{
+                cout << "ERROR: unknow pin:" << pin_name << endl;
+                continue;
+            }
+            min_x = min(min_x, x);
+            max_x = max(max_x, x);
+            min_y = min(min_y, y);
+            max_y = max(max_y, y);
         }
+        wiring_length += (max_x - min_x) + (max_y - min_y);
     }
-
-
+    return wiring_length;
 }
 
 long long Info::calculate_cost(){
     
 
 }
+void Info::update_adjacent_operands(int i, int j){
+    set<int> affected = {i-1, i, j-1, j};
+    adjacent_operands.erase(remove_if(adjacent_operands.begin(), adjacent_operands.end(),[&](const pair<int, int>& p) {return affected.count(p.first) || affected.count(p.second);}), adjacent_operands.end());
+
+    auto try_add = [&](int a, int b){
+        if (a >= 0 && b < E.expr.size()){
+            if (E.expr[a].type == PEType::Operand && E.expr[b].type == PEType::Operand) {
+                adjacent_operands.emplace_back(a, b);
+            }
+        }
+    };
+    try_add(i - 1, i);
+    try_add(i, i + 1);
+    try_add(j - 1, j);
+    try_add(j, j + 1);
+}
 
 void Info::M1_move(){
-    
+    /* Swap two operands */
+    if (adjacent_operands.empty()) return;
+
+    int choice = rand() % adjacent_operands.size();
+    auto [i, j] = adjacent_operands[choice];
+    cout << i << " " << j << endl;
+    swap(E.expr[i], E.expr[j]);
+}
+
+PEType invert_type(PEType type){
+    if (type == PEType::Operand) cout << "ERROR: Operand but put in invert type";
+    if (type == PEType::H){
+        return PEType::V;
+    }
+    return PEType::H;
+}
+
+void Info::M2_move(){
+    if (operator_chains.empty()) return;
+
+    int choice = rand() % operator_chains.size();
+    auto[start, end] = operator_chains[choice];
+    for(int i = start; i <= end; i++){
+        E.expr[i].type = invert_type(E.expr[i].type);
+    }
+}
+
+void Info::M3_move(){
+    if (adjacent_op_operands.empty()) return;
 }
 
 void Info::SA_algo(){
     print_E();
-    M1_move();
+    M2_move();
     print_E();
 }
