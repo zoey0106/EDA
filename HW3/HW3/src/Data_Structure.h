@@ -95,13 +95,14 @@ class Info{
         double T;
         PolishExpr E;
         PolishExpr best_E;
+        vector<int> num_operators_in_E;
         long long best_cost;
         // SA algo.
         void SA_algo();
         void M1_move();
         void M2_move();
-        void M3_move();
-        void update_adjacent_operands(int i, int j); // for M2/M3
+        bool M3_move();
+        bool is_valid_expr(int i, int j); // for M3
         long long calculate_cost();
         long long calculate_wiring_length();
         void calculate_area_and_axis();
@@ -112,6 +113,7 @@ class Info{
         void initial_adjacent_operands();
         void initial_chain_operators();
         void initial_op_operands();
+        void initial_num_operators_in_E();
         // Checkerror
         void print_block(string name);
         void print_pad(string name);

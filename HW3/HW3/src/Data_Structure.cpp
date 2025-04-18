@@ -113,6 +113,17 @@ void Info::initial_op_operands(){
     }
 }
 
+void Info::initial_num_operators_in_E(){
+    num_operators_in_E.clear();
+    int operator_count = 0;
+    for(auto& e: E.expr){
+        if (e.type != PEType::Operand){
+            operator_count++;
+        }
+        num_operators_in_E.push_back(operator_count);
+    }
+}
+
 // SA algo. init
 void Info::initial_PolishExpr(){
     /*
@@ -138,6 +149,7 @@ void Info::initial_PolishExpr(){
     initial_adjacent_operands();
     initial_chain_operators();
     initial_op_operands();
+    initial_num_operators_in_E();
 }
 
 double Info::initial_temperature(int sample_size, double p){
@@ -271,22 +283,6 @@ long long Info::calculate_cost(){
     
 
 }
-void Info::update_adjacent_operands(int i, int j){
-    set<int> affected = {i-1, i, j-1, j};
-    adjacent_operands.erase(remove_if(adjacent_operands.begin(), adjacent_operands.end(),[&](const pair<int, int>& p) {return affected.count(p.first) || affected.count(p.second);}), adjacent_operands.end());
-
-    auto try_add = [&](int a, int b){
-        if (a >= 0 && b < E.expr.size()){
-            if (E.expr[a].type == PEType::Operand && E.expr[b].type == PEType::Operand) {
-                adjacent_operands.emplace_back(a, b);
-            }
-        }
-    };
-    try_add(i - 1, i);
-    try_add(i, i + 1);
-    try_add(j - 1, j);
-    try_add(j, j + 1);
-}
 
 void Info::M1_move(){
     /* Swap two operands */
@@ -316,8 +312,30 @@ void Info::M2_move(){
     }
 }
 
-void Info::M3_move(){
+bool Info::is_valid_expr(int i, int j){
+    /* return true: valid swap
+       return false: invalid swap */
+    if (num_operators_in_E[j]*2 < i) return true;
+    return false;
+}
+
+bool Info::M3_move(){
     if (adjacent_op_operands.empty()) return;
+
+    int choice = rand() % adjacent_op_operands.size();
+    auto [i, j] = adjacent_op_operands[choice];
+    
+    if (E.expr[i].type == PEType::Operand){
+        // operand , {V,H} -> check balloting property
+        if (!is_valid_expr(i, j)) return false;
+        num_operators_in_E[i]++;
+    }
+    else{
+        num_operators_in_E[i]--;
+    }
+    swap(E.expr[i], E.expr[j]);
+    // will effect adjacent_operands/ operator_chains/ adjacent_op_operands -> change later
+    return true;
 }
 
 void Info::SA_algo(){
