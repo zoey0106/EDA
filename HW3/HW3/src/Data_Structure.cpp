@@ -147,10 +147,12 @@ void Info::initial_PolishExpr(){
     E.expr = expr;
     best_E = expr;
     best_cost = calculate_cost();
+    last_cost = best_cost;
     initial_adjacent_operands();
     initial_chain_operators();
     initial_op_operands();
     initial_num_operators_in_E();
+    set_best_epression(best_cost);
 }
 
 double Info::initial_temperature(int sample_size, double p){
@@ -158,9 +160,10 @@ double Info::initial_temperature(int sample_size, double p){
     return 1000;
 }
 
-void Info::initialize(){
+void Info::initialize(int k){
     initial_PolishExpr(); // Init sol.
     T = initial_temperature(1000, 0.9); // Init T
+    N = k*hard_block_list.size();
     MT = 0;
     reject = 0;
 }
@@ -199,7 +202,7 @@ void Info::set_best_epression(long long current_cost){
     best_E = E;
     best_hard_block_list = hard_block_list;
 }
-
+// bottelnect need fixed
 void Info::calculate_area_and_axis(){
     stack<set<Shape>> area;
     bool flag = true;
@@ -209,6 +212,17 @@ void Info::calculate_area_and_axis(){
             area.push(e.shape_set);
             continue;
         }
+
+        // free memeory
+        for (auto& shape : e.shape_set) {
+            if (shape.left_child) {
+                delete shape.left_child;
+            }
+            if (shape.right_child) {
+                delete shape.right_child;
+            }
+        }
+
         set<Shape> right_child = area.top(); area.pop();
         set<Shape> left_child = area.top(); area.pop();
         set<Shape> shape_set;
@@ -345,24 +359,26 @@ bool Info::is_valid_expr(int i, int j){
     return false;
 }
 
-void Info::M1_move(){
+bool Info::M1_move(){
     /* Swap two operands */
-    if (adjacent_operands.empty()) return;
+    if (adjacent_operands.empty()) return false;
 
     int choice = rand() % adjacent_operands.size();
     auto [i, j] = adjacent_operands[choice];
-    cout << i << " " << j << endl;
     swap(E.expr[i], E.expr[j]);
+    
+    return true;
 }
 
-void Info::M2_move(){
-    if (operator_chains.empty()) return;
+bool Info::M2_move(){
+    if (operator_chains.empty()) return false;
 
     int choice = rand() % operator_chains.size();
     auto[start, end] = operator_chains[choice];
     for(int i = start; i <= end; i++){
         E.expr[i].type = invert_type(E.expr[i].type);
     }
+    return true;
 }
 // how to keep HH or VV outoftheway?
 bool Info::M3_move(){
@@ -394,14 +410,53 @@ bool Info::M3_move(){
     update_adjacent_chain_data(i, j);
     return true;
 }
+/*
+bool Info::selectMove() {
+    double r = (double)rand() / RAND_MAX;
 
-void Info::SA_algo(){
-    cout << best_cost << endl;
-    set_best_epression(best_cost);
-    M3_move();
-    long long current_cost = calculate_cost();
-    if (current_cost < best_cost){
-        set_best_epression(current_cost);
+    if (r < 0.5) return M1_move();         // 50%
+    else if (r < 0.8) return M2_move();    // 30%
+    else return M3_move();                // 20%
+}
+*/
+bool Info::select_move(){
+    int move_type = rand() % 3;
+    switch (move_type){
+        case 0: return M1_move();
+        case 1: return M2_move();
+        case 2: return M3_move();
+        default: return false;
     }
-    cout << current_cost << endl;
+}
+
+void Info::SA_algo(int ϵ){
+    initialize(5); // Init T/E/M/N : param:k=5 * n-> uphill times
+    int r = 0.85;
+    cout << "Best wiring length: " << best_cost << endl;
+    while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
+        MT = 0;
+        reject = 0;
+        uphill = 0;
+        while(uphill <= N && MT <= 2*N){
+            while (!select_move());
+            long long current_cost = calculate_cost();
+            MT++;
+            long long delta_c = current_cost - last_cost;
+            double random = (double)rand() / RAND_MAX;
+            if (delta_c <= 0 || random < exp(-delta_c/T)){
+                if (delta_c > 0){
+                    uphill++;
+                }
+                if (current_cost < best_cost){
+                    set_best_epression(current_cost);
+                    cout << "Best wiring length: " << best_cost << endl;
+                }
+            }
+            else{
+                reject++;
+            } 
+            last_cost = current_cost;
+        }
+        T *= r;
+    }
 }

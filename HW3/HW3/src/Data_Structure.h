@@ -8,6 +8,7 @@ using namespace std;
 #include <map>
 #include <deque>
 #include <set>
+#include <memory>
 class Net{
     public:
         Net() = default;;
@@ -47,7 +48,6 @@ struct Shape{
     HardBlock* hard_block;
     Shape* left_child = nullptr;
     Shape* right_child = nullptr;
-    
 
     bool operator<(const Shape& other)const{
         if (width != other.width) return width < other.width;
@@ -90,21 +90,25 @@ class Info{
         vector<pair<int, int>> operator_chains;
         vector<pair<int, int>> adjacent_op_operands;
         // Termination
-        int MT; 
-        int reject;
+        double MT; 
+        double reject;
+        int N;
+        int uphill;
         // SA sol. & param.
         double T;
         PolishExpr E;
         PolishExpr best_E;
         vector<int> num_operators_in_E;
         long long best_cost;
+        long long last_cost;
         vector<HardBlock> best_hard_block_list;
 
         // [func. for SA algo.]
-        void SA_algo();
-        void M1_move();
-        void M2_move();
+        void SA_algo(int ϵ);
+        bool M1_move();
+        bool M2_move();
         bool M3_move();
+        bool select_move();
         bool is_valid_expr(int i, int j); // for M3
         // Data maintainess
         void update_adjacent_chain_data(int i, int j);
@@ -116,7 +120,7 @@ class Info{
         // Initialization 
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
-        void initialize();
+        void initialize(int k);
         void initial_adjacent_operands();
         void initial_chain_operators();
         void initial_op_operands();
