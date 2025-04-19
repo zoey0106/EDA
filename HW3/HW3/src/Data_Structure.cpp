@@ -171,7 +171,7 @@ void Info::initialize(int k){
 // SA algo.
 
 // Area computation for hard blocks
-void assign_coordinate(Shape* shape, int x, int y){
+void assign_coordinate(shared_ptr<Shape>& shape, int x, int y){
     if (!shape) return;
 
     if (shape->hard_block != nullptr){
@@ -182,8 +182,8 @@ void assign_coordinate(Shape* shape, int x, int y){
     }
 
     if (shape->left_child && shape->right_child){
-        Shape* L = shape->left_child;
-        Shape* R = shape->right_child;
+        auto L = shape->left_child;
+        auto R = shape->right_child;
 
         if (shape->width == L->width + R->width && shape->height == max(L->height, R->height)){
             assign_coordinate(L, x, y);
@@ -204,47 +204,45 @@ void Info::set_best_epression(long long current_cost){
 }
 // bottelnect need fixed
 void Info::calculate_area_and_axis(){
-    stack<set<Shape>> area;
-    bool flag = true;
+    using ShapePtr = shared_ptr<Shape>;
+    stack<set<ShapePtr>> area;
 
     for(auto& e: E.expr){
         if(e.type == PEType::Operand){
-            area.push(e.shape_set);
+            set<ShapePtr> shape_set;
+            for (const auto& shape : e.shape_set) {
+                ShapePtr sp = make_shared<Shape>(shape);
+                shape_set.insert(sp);
+            }
+            area.push(shape_set);
             continue;
         }
 
-        // free memeory
-        for (auto& shape : e.shape_set) {
-            if (shape.left_child) {
-                delete shape.left_child;
-            }
-            if (shape.right_child) {
-                delete shape.right_child;
-            }
-        }
-
-        set<Shape> right_child = area.top(); area.pop();
-        set<Shape> left_child = area.top(); area.pop();
-        set<Shape> shape_set;
+        set<ShapePtr> right_child = area.top(); area.pop();
+        set<ShapePtr> left_child = area.top(); area.pop();
+        set<ShapePtr> shape_set;
 
         for(auto& r_shape: right_child){
             for(auto& l_shape: left_child){
-                Shape s;
+                auto s = make_shared<Shape>();
                 if(e.type == PEType::V){
-                    s.width = r_shape.width+l_shape.width;
-                    s.height = max(r_shape.height, l_shape.height);
+                    s->width = r_shape->width+l_shape->width;
+                    s->height = max(r_shape->height, l_shape->height);
                 }
                 else if (e.type == PEType::H){
-                    s.width = max(r_shape.width, l_shape.width);
-                    s.height = r_shape.height + l_shape.height;
+                    s->width = max(r_shape->width, l_shape->width);
+                    s->height = r_shape->height + l_shape->height;
                 }
-                s.hard_block = e.hard_block;
-                s.left_child = new Shape(l_shape);
-                s.right_child = new Shape(r_shape);
+                s->hard_block = e.hard_block; //
+                s->left_child = l_shape;
+                s->right_child = r_shape;
                 shape_set.insert(s);
             }
         }
-        e.shape_set = shape_set;
+        e.shape_set.clear();
+        for (auto& sp : shape_set) {
+            e.shape_set.insert(*sp);
+        }
         area.push(shape_set);
     }
 
@@ -253,10 +251,13 @@ void Info::calculate_area_and_axis(){
         return;
     }
 
-    set<Shape> final_shape = area.top(); area.pop();
-    Shape best_shape = *min_element(final_shape.begin(),final_shape.end(), [](const Shape& a, const Shape& b){ return (a.width * a.height) < (b.width * b.height);});
-    // Set hard blocks' x-coordinate & y-coordinate
-    assign_coordinate(&best_shape, 0, 0);
+    auto& final_set = area.top();
+    auto best_shape = *std::min_element(final_set.begin(), final_set.end(),
+        [](const ShapePtr& a, const ShapePtr& b) {
+            return (a->width * a->height) < (b->width * b->height);
+        });
+
+    assign_coordinate(best_shape, 0, 0); 
 }
 // HPWL:can acclerate to not calculate every block
 long long Info::calculate_wiring_length(){
