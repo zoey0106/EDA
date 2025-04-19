@@ -237,9 +237,7 @@ void Info::calculate_area_and_axis(){
     // Set hard blocks' x-coordinate & y-coordinate
     assign_coordinate(&best_shape, 0, 0);
 }
-
-// HPWL
-// can acclerate to not calculate every block
+// HPWL:can acclerate to not calculate every block
 long long Info::calculate_wiring_length(){
     calculate_area_and_axis();
     int wiring_length = 0;
@@ -283,6 +281,62 @@ long long Info::calculate_cost(){
     
 
 }
+// maintainess for movement
+void Info::update_adjacent_chain_data(int i, int j){
+    
+    // update adjacent_operands
+    adjacent_operands.erase(remove_if(adjacent_operands.begin(), adjacent_operands.end(), [&](const pair<int,int>&p){return (p.first >= i-1 && p.first <= j);}),adjacent_operands.end());
+
+    // update adjacent_op_operands
+    adjacent_op_operands.erase(remove_if(adjacent_op_operands.begin(), adjacent_op_operands.end(), [&](const pair<int,int>&p){return (p.first >= i-1 && p.first <= j);}),adjacent_op_operands.end());
+
+    for (int k = i-1; k <= j; k++){
+        if (k >= 0 && k+1 < E.expr.size()){
+            // update adjacent_operands
+            if (E.expr[k].type == PEType::Operand && E.expr[k + 1].type == PEType::Operand) {
+                adjacent_operands.emplace_back(k, k + 1);
+            }
+            // update adjacent_op_operands
+            bool is_op1 = E.expr[k].type != PEType::Operand;
+            bool is_op2 = E.expr[k + 1].type != PEType::Operand;
+            if (is_op1 != is_op2) {
+                adjacent_op_operands.emplace_back(k, k + 1);
+            }
+        }
+    }
+
+    // update operator_chain
+    int start = -1;
+    for (int k = max(0, i - 2); k <= min((int)E.expr.size() - 1, j + 2); k++) {
+        if (E.expr[k].type != PEType::Operand) {
+            if (start == -1) start = k;
+        } else {
+            if (start != -1) {
+                if (k - start >= 1) operator_chains.emplace_back(start, k - 1);
+                start = -1;
+            }
+        }
+    }
+    if (start != -1 && E.expr.size() - start >= 1) {
+        operator_chains.emplace_back(start, E.expr.size() - 1);
+    }
+}
+
+// func. for movement
+PEType invert_type(PEType type){
+    if (type == PEType::Operand) cout << "ERROR: Operand but put in invert type";
+    if (type == PEType::H){
+        return PEType::V;
+    }
+    return PEType::H;
+}
+
+bool Info::is_valid_expr(int i, int j){
+    /* return true: valid swap
+       return false: invalid swap */
+    if (num_operators_in_E[j]*2 < i) return true;
+    return false;
+}
 
 void Info::M1_move(){
     /* Swap two operands */
@@ -294,14 +348,6 @@ void Info::M1_move(){
     swap(E.expr[i], E.expr[j]);
 }
 
-PEType invert_type(PEType type){
-    if (type == PEType::Operand) cout << "ERROR: Operand but put in invert type";
-    if (type == PEType::H){
-        return PEType::V;
-    }
-    return PEType::H;
-}
-
 void Info::M2_move(){
     if (operator_chains.empty()) return;
 
@@ -311,16 +357,9 @@ void Info::M2_move(){
         E.expr[i].type = invert_type(E.expr[i].type);
     }
 }
-
-bool Info::is_valid_expr(int i, int j){
-    /* return true: valid swap
-       return false: invalid swap */
-    if (num_operators_in_E[j]*2 < i) return true;
-    return false;
-}
-
+// how to keep HH or VV outoftheway?
 bool Info::M3_move(){
-    if (adjacent_op_operands.empty()) return;
+    if (adjacent_op_operands.empty()) return false;
 
     int choice = rand() % adjacent_op_operands.size();
     auto [i, j] = adjacent_op_operands[choice];
@@ -329,17 +368,28 @@ bool Info::M3_move(){
         // operand , {V,H} -> check balloting property
         if (!is_valid_expr(i, j)) return false;
         num_operators_in_E[i]++;
+        // prevent VV/HH
+        if (i > 0 && E.expr[i-1].type == E.expr[j].type){
+            // invert itself
+            E.expr[j].type = invert_type(E.expr[j].type);
+        }
     }
     else{
         num_operators_in_E[i]--;
+        // prevent VV/HH
+        if (j < E.expr.size()-1 && E.expr[i].type == E.expr[j+1].type){
+            // invert itself : my way/ can change it to original
+            E.expr[i].type = invert_type(E.expr[i].type);
+        }
     }
     swap(E.expr[i], E.expr[j]);
     // will effect adjacent_operands/ operator_chains/ adjacent_op_operands -> change later
+    update_adjacent_chain_data(i, j);
     return true;
 }
 
 void Info::SA_algo(){
     print_E();
-    M2_move();
+    cout << M3_move() << endl; 
     print_E();
 }

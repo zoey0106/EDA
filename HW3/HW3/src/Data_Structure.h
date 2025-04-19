@@ -78,13 +78,14 @@ class PolishExpr{
 class Info{
     public:
         Info() = default;
-        // Data
+        // [Data]
         vector<HardBlock> hard_block_list;
         vector<Net> net_list;
         vector<Pad> pad_list;
         unordered_map<string, Pad*> pad_map;
         unordered_map<string, HardBlock*> hard_block_map;
         unordered_map<string, Net*> net_map;
+        // SA movement
         vector<pair<int, int>> adjacent_operands;
         vector<pair<int, int>> operator_chains;
         vector<pair<int, int>> adjacent_op_operands;
@@ -97,16 +98,20 @@ class Info{
         PolishExpr best_E;
         vector<int> num_operators_in_E;
         long long best_cost;
-        // SA algo.
+
+        // [func. for SA algo.]
         void SA_algo();
         void M1_move();
         void M2_move();
         bool M3_move();
         bool is_valid_expr(int i, int j); // for M3
+        // Data maintainess
+        void update_adjacent_chain_data(int i, int j);
+        // Cost
         long long calculate_cost();
         long long calculate_wiring_length();
         void calculate_area_and_axis();
-        // SA initialization 
+        // Initialization 
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
         void initialize();
