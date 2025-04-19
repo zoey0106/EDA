@@ -45,9 +45,9 @@ struct Shape{
     long long height;
     bool rotated; 
     // trace info
-    HardBlock* hard_block = nullptr;
-    shared_ptr<Shape> left_child = nullptr;
-    shared_ptr<Shape> right_child = nullptr;
+    HardBlock* hard_block= nullptr;
+    Shape* left_child = nullptr;
+    Shape* right_child = nullptr;
 
     bool operator<(const Shape& other)const{
         if (width != other.width) return width < other.width;
