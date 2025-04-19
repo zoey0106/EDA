@@ -143,25 +143,13 @@ void write_output(Info& info, string filename){
         cout << "File path_name: " << output_file_path;
         exit(1);
     }
-    // // info.cut_size_compute();
-    // fout << "CutSize " << info.cut_size << endl;
-    // long long dieA_num = 0;
-    // long long dieB_num = 0;
+    // info.cut_size_compute();
+    fout << "Wirelength " << info.best_cost << endl;
 
-    // for (const auto& cell : info.cells) {
-    //     if (cell.current_tech == "DieA")  dieA_num++;
-    // }
-    // fout << "DieA "<< dieA_num << endl;
-    // for (const auto& cell : info.cells) {
-    //     if (cell.current_tech == "DieA")  fout << cell.id << endl;
-    // }
-    // for (const auto& cell : info.cells) {
-    //     if (cell.current_tech == "DieB")  dieB_num++;
-    // }
-    // fout << "DieB "<< dieB_num << endl;
-    // for (const auto& cell : info.cells) {
-    //     if (cell.current_tech == "DieB")  fout << cell.id << endl;
-    // }
+    fout << "NumHardBlocks " << info.best_hard_block_list.size() << endl;
+    for (int i = 0; i < info.best_hard_block_list.size(); i++){
+        fout << info.best_hard_block_list[i].name << " " << info.best_hard_block_list[i].x << " "<< info.best_hard_block_list[i].y << " "<< info.best_hard_block_list[i].rotate << endl;
+    }
 
     fout.close();
 

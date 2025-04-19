@@ -146,6 +146,7 @@ void Info::initial_PolishExpr(){
     }
     E.expr = expr;
     best_E = expr;
+    best_cost = calculate_cost();
     initial_adjacent_operands();
     initial_chain_operators();
     initial_op_operands();
@@ -191,6 +192,12 @@ void assign_coordinate(Shape* shape, int x, int y){
             cout << "ERROR: wrong assignment of x,y to block!" << endl;
         }
     }
+}
+
+void Info::set_best_epression(long long current_cost){
+    best_cost = current_cost;
+    best_E = E;
+    best_hard_block_list = hard_block_list;
 }
 
 void Info::calculate_area_and_axis(){
@@ -239,7 +246,6 @@ void Info::calculate_area_and_axis(){
 }
 // HPWL:can acclerate to not calculate every block
 long long Info::calculate_wiring_length(){
-    calculate_area_and_axis();
     int wiring_length = 0;
 
     for(auto& net: net_list){
@@ -278,9 +284,10 @@ long long Info::calculate_wiring_length(){
 }
 
 long long Info::calculate_cost(){
-    
-
+    calculate_area_and_axis();
+    return calculate_wiring_length();
 }
+
 // maintainess for movement
 void Info::update_adjacent_chain_data(int i, int j){
     
@@ -389,7 +396,12 @@ bool Info::M3_move(){
 }
 
 void Info::SA_algo(){
-    print_E();
-    cout << M3_move() << endl; 
-    print_E();
+    cout << best_cost << endl;
+    set_best_epression(best_cost);
+    M3_move();
+    long long current_cost = calculate_cost();
+    if (current_cost < best_cost){
+        set_best_epression(current_cost);
+    }
+    cout << current_cost << endl;
 }

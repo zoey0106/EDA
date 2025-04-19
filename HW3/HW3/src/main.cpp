@@ -10,14 +10,10 @@ int main(int argc, char *argv[]){
     ifstream input = read_file(argv[1]);
     build_data_structure(info, input); // Init data info
     info.initialize(); // Init T and E
-    // cout << "current wiring length: "<< info.calculate_wiring_length() << endl;
     info.SA_algo();
-    // SA algo.
-    // 5 -> epsilon
-    // while(((info.reject/info.MT) <= 0.95) && info.T > 5){
-
-    // }
     
+    // compute final wiring length
+    write_output(info, argv[2]);
 
     return 0;
 }

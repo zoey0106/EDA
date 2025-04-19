@@ -98,6 +98,7 @@ class Info{
         PolishExpr best_E;
         vector<int> num_operators_in_E;
         long long best_cost;
+        vector<HardBlock> best_hard_block_list;
 
         // [func. for SA algo.]
         void SA_algo();
@@ -111,6 +112,7 @@ class Info{
         long long calculate_cost();
         long long calculate_wiring_length();
         void calculate_area_and_axis();
+        void set_best_epression(long long current_cost);
         // Initialization 
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
