@@ -43,16 +43,14 @@ enum class PEType { Operand, H, V };
 struct Shape{
     long long width;
     long long height;
-    bool rotated; 
-    // trace info
-    HardBlock* hard_block= nullptr;
-    Shape* left_child = nullptr;
-    Shape* right_child = nullptr;
+    bool rotated = false; 
 
-    bool operator<(const Shape& other)const{
-        if (width != other.width) return width < other.width;
-        if (height != other.height) return height < other.height;
-        return rotated < other.rotated;
+    Shape() = default;
+    Shape(long long w, long long h, bool r = false)
+        : width(w), height(h), rotated(r) {}
+
+    bool operator<(const Shape& other) const {
+        return tie(width, height, rotated) < tie(other.width, other.height, other.rotated);
     }
 };
 
@@ -62,8 +60,8 @@ struct PEItem {
     set<Shape> shape_set;
     PEItem(PEType t, HardBlock* block = nullptr): type(t), hard_block(block){
         if(type == PEType::Operand && block != nullptr){
-            shape_set.insert({block->width, block->height, false, block});
-            shape_set.insert({block->height,block->width, true, block});
+            shape_set.insert({block->width, block->height, false});
+            shape_set.insert({block->height,block->width, true});
         }
     };
 };
@@ -102,7 +100,9 @@ class Info{
         long long best_cost;
         long long last_cost;
         vector<HardBlock> best_hard_block_list;
-
+        // cost
+        vector<vector<Shape>> shape_table; //record shape table
+        vector<int> subtree_size_table; //record subtree  
         // [func. for SA algo.]
         void SA_algo(int ϵ);
         bool M1_move();
@@ -117,6 +117,13 @@ class Info{
         long long calculate_wiring_length();
         void calculate_area_and_axis();
         void set_best_epression(long long current_cost);
+
+        void assign_coordinate_flat(int idx, Shape shape, int x, int y);
+        int build_shape_list_topdown(int idx);
+        vector<Shape> prune_dominated_shapes(vector<Shape>& shapes);
+        int get_subtree_size(int idx) const;
+        void build_subtree_size_table();
+        
         // Initialization 
         double initial_temperature(int sample_size, double p = 0.9); // Final optimization
         void initial_PolishExpr(); // Init E
