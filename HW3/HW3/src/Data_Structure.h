@@ -73,8 +73,24 @@ class PolishExpr{
         PolishExpr(const vector<PEItem>& items): expr(items) {};
 };
 
-class Setting{
-    
+class SA_Setting{
+    public:
+        SA_Setting() = default;
+        long long k = 10;
+        double ϵ = 1.0;
+        double r = 0.9;
+        double T = 1000.0;
+
+        // Wiring length minimization
+
+        double f_ϵ = 100.0;
+        double f_T = 100.0;
+        long long f_k = 10;
+        long long iter = 0;
+
+        double high_T = 4000000.0;
+        long long threshold = 100;
+        void reset();
 };
 
 class Info{
@@ -87,32 +103,27 @@ class Info{
         unordered_map<string, Pad*> pad_map;
         unordered_map<string, Net*> net_map;
         // Termination
-        double MT; 
-        double reject;
-        int N;
-        int uphill;
+        SA_Setting setting; 
         // SA sol. & param.
-        double T;
         PolishExpr E;
-        long long current_wiring_length;
-        long long last_cost;
-        // vector<int> num_operators_in_E;
         PolishExpr best_E;
         long long best_wiring_length;
         long long best_cost;
         // cost
-        vector<vector<Shape>> shape_table; //record shape table
-        vector<int> subtree_size_table; //record subtree  
+        vector<vector<Shape>> shape_table;
+        vector<int> subtree_size_table;
         // constraint
         double dead_space_ratio;
         long long w_h_limit;
         // [func. for SA algo.]
-        void SA_algo(int ϵ, bool outline);
+        void SA_algo(bool outline);
         PolishExpr M1_move(PolishExpr old_E);
         PolishExpr M2_move(PolishExpr old_E);
         PolishExpr M3_move(PolishExpr old_E);
         PolishExpr select_move(PolishExpr old_E);
         bool is_valid_expr(int i, int j, vector<int> num_operators_in_E); // for M3
+        // T schedule
+        double T_secheduling(double T, bool outline);
         // Cost
         long long calculate_cost(PolishExpr NE, bool outline);
         long long calculate_wiring_length(PolishExpr NE);
@@ -126,8 +137,6 @@ class Info{
         long long dead_space_cost();
         bool is_floorplan_within_limit();
         // Initialization 
-        void initialize(int k);
-        void initial_movement_data();
         // -----initial_movement_data-----//
         vector<int> initial_operands(PolishExpr old_E);
         vector<pair<int, int>> initial_chain_operators(PolishExpr old_E);

@@ -35,6 +35,23 @@ HardBlock::HardBlock(string block_name, long long w, long long h){
     y = -1;
 }
 
+// SA setting
+void SA_Setting::reset(){
+    long long k = 5;
+    double ϵ = 1.0;
+    double r = 0.9;
+    double T = 1000.0;
+
+    // Wiring length minimization
+
+    double f_ϵ = 100.0;
+    double f_T = 100.0;
+    long long f_k = 10;
+    long long iter = 0;
+
+    double high_T = 4000000.0;
+    long long threshold = 100;
+}
 // Info
 // error check
 
@@ -152,25 +169,17 @@ void Info::init_expr(){
     E.expr = expr;
 }
 
-void Info::initial_movement_data(){
-    initial_operands(E);
-    initial_chain_operators(E);
-    initial_op_operands(E);
-    initial_num_operators_in_E(E);
-}
+// void Info::initial_movement_data(){
+//     initial_operands(E);
+//     initial_chain_operators(E);
+//     initial_op_operands(E);
+//     initial_num_operators_in_E(E);
+// }
 
 void Info::initial_PolishExpr(){
     /*initialize Expression E & data*/
     init_expr();
     best_E = E.expr;
-    initial_movement_data();
-}
-
-void Info::initialize(int k){
-    T = 1000;
-    N = k * hard_block_list.size();
-    MT = 0;
-    reject = 0;
 }
 
 // SA algo.
@@ -442,7 +451,6 @@ long long Info::calculate_wiring_length(PolishExpr NE){
         }
         wiring_length += (max_x - min_x) + (max_y - min_y);
     }
-    current_wiring_length = wiring_length;
     return wiring_length;
 }
 
@@ -488,8 +496,9 @@ bool Info::is_valid_expr(int i, int j, vector<int> num_operators_in_E){
 PolishExpr Info::M1_move(PolishExpr old_E){
     /* Randomly swap two operands */
     vector<int> operands = initial_operands(old_E);
-    int random = rand() % (operands.size()-1);
-    swap(old_E.expr[operands[random]], old_E.expr[operands[random+1]]);
+    int random_first = rand() % (operands.size()-1);
+    int random_second = rand() % (operands.size()-1);
+    swap(old_E.expr[operands[random_first]], old_E.expr[operands[random_second]]);
     return old_E;
 }
 
@@ -549,12 +558,26 @@ PolishExpr Info::select_move(PolishExpr old_E){
     }
 }
 
-void Info::SA_algo(int ϵ, bool outline){
-    int r = 0.85;
-    initialize(5); 
+double Info::T_secheduling(double T, bool outline){
+    if (outline) return T * setting.r;
+    setting.iter++;
+    if (setting.iter < setting.threshold) return setting.high_T;
+    else if (setting.iter == setting.threshold){
+        return setting.T;
+    }
+    return T * setting.r;
+}
+
+void Info::SA_algo(bool outline){
+    setting.reset();
+    if (outline) setting.r = 0.97;
+    else setting.r = 0.995;
+
+    double MT = 0, reject = 0, T = setting.T;
+    int epoch = 0, uphill = 0, N = setting.k * hard_block_list.size();
+
     best_cost = calculate_cost(E, outline);
     cout << "Initial best cost: " << best_cost << "\n";
-    int epoch = 0;
     if (best_cost == 0 && outline){
         cout << "[Success] Outline satisfied. Continuing to minimizing wirelength" ;
     }
@@ -565,7 +588,7 @@ void Info::SA_algo(int ϵ, bool outline){
             reject = 0;
             uphill = 0;
             while(uphill <= N && MT <= 2*N){
-                cout << "[Epoch " <<  ++epoch << "]\n";
+                epoch++;
                 PolishExpr NE = select_move(E);
                 long long old_cost = best_cost;
                 long long new_cost = calculate_cost(NE, outline);
@@ -579,7 +602,7 @@ void Info::SA_algo(int ϵ, bool outline){
                         uphill++;
                     }
 
-                    if (new_cost < old_cost){
+                    if (delta_c <= 0 && best_cost < old_cost){
                         best_E = NE;
                         cout << "New cost: " << new_cost << "\n";
                         if (best_cost == 0 && outline){
@@ -590,13 +613,13 @@ void Info::SA_algo(int ϵ, bool outline){
                 else{
                     reject++;
                 } 
-                if (epoch >= 6000) {
-                    cout << "Epoch > 6000\n";
+                if (epoch >= 7000) {
+                    cout << "[Epoch Finish]\n";
                     goto END;
                 }
             }
-            T *= r;
-            if ((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ) break;
+            T = T_secheduling(T, outline);
+            if ((reject/(MT == 0 ? 1 : MT)) > 0.95 || T < setting.ϵ) break;
         }
     }while(outline);
 END:
