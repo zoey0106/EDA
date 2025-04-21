@@ -10,6 +10,8 @@
 #include <set>
 #include <stack>
 #include <functional>
+#include <cassert>
+
 // Net
 Net::Net(string net_name, vector<string> pin_list){
     name = net_name;
@@ -77,11 +79,11 @@ void Info::print_E(){
     }
 }
 
-void Info::initial_adjacent_operands(){
-    adjacent_operands.clear();
+void Info::initial_operands(){
+    operands.clear();
     for (int i = 0; i < E.expr.size(); i++){
-        if (E.expr[i].type == PEType::Operand && E.expr[i+1].type == PEType::Operand){
-            adjacent_operands.emplace_back(i, i+1);
+        if (E.expr[i].type == PEType::Operand){
+            operands.emplace_back(i);
         }
     }
 }
@@ -126,47 +128,120 @@ void Info::initial_num_operators_in_E(){
 }
 
 // SA algo. init
+
+void Info::init_expr(){
+    vector<PEItem> expr;
+    cout << "w_h_limit " << w_h_limit << endl;
+    long long now_width = 0;
+    long long row_count = 0;
+    long long col_count = 0;
+    long long horizontal_count = 0;
+
+    // sort cell by height (optional)
+    vector<int> sorted(hard_block_list.size());
+    for (int i = 0; i < hard_block_list.size(); ++i) {
+        sorted[i] = i;
+    }
+
+    sort(sorted.begin(), sorted.end(), [&](int a, int b) {
+        return hard_block_list[a].height > hard_block_list[b].height;
+    });
+
+    for (int i = 0; i < sorted.size(); ++i) {
+        
+        const HardBlock &c = hard_block_list[sorted[i]];
+        now_width += c.width;
+        
+        if (now_width > w_h_limit) {
+            row_count++;
+            if (row_count >= 2) {
+                expr.emplace_back(PEType::H);
+                horizontal_count++;
+                row_count = 1;
+            }
+
+            now_width = c.width;
+            col_count = 0;
+        }
+
+        expr.emplace_back(PEType::Operand, &hard_block_list[sorted[i]]);
+        
+        col_count++;
+        if (col_count >= 2) {
+            expr.emplace_back(PEType::V);
+            col_count = 1;
+            horizontal_count++;
+        }
+    }
+    for (int i = horizontal_count; i < hard_block_list.size() - 1; ++i) {
+        expr.emplace_back(PEType::H);
+    }
+    E.expr = expr;
+}
+
+void Info::initial_movement_data(){
+    initial_operands();
+    initial_chain_operators();
+    initial_op_operands();
+    initial_num_operators_in_E();
+}
+
 void Info::initial_PolishExpr(){
     /*
         initialize Expression E: 12V3V4V...nV
     */
-
-    vector<PEItem> expr;
-    bool flag = false;
-    for (auto& block: hard_block_list){
-        if (flag == false){
-            PEItem e(PEType::Operand, &block);
-            expr.push_back(e);
-            flag = true;
-            continue;
-        }
-        PEItem e(PEType::Operand, &block);
-        expr.push_back(e);
-        PEItem e2(PEType::V);
-        expr.push_back(e2);
-    }
-    E.expr = expr;
-    best_E = expr;
-    best_cost = calculate_cost();
+    init_expr();
+    best_E = E.expr;
+    best_cost = calculate_cost(1);
+    best_wiring_length = current_wiring_length;
     last_cost = best_cost;
-    initial_adjacent_operands();
-    initial_chain_operators();
-    initial_op_operands();
-    initial_num_operators_in_E();
-    set_best_epression(best_cost);
+    initial_movement_data();
+    set_best_epression(best_wiring_length);
 }
 
 double Info::initial_temperature(int sample_size, double p){
     // final optimization
-    return 1000;
+    return 100000;
 }
 
-void Info::initialize(int k){
-    initial_PolishExpr(); // Init sol.
-    T = initial_temperature(1000, 0.9); // Init T
-    N = k*hard_block_list.size();
-    MT = 0;
-    reject = 0;
+void Info::initialize(int k, int phase){
+    if (phase == 1){
+        // Init width& height limit
+        get_floorplan_limit();
+        initial_PolishExpr(); // Init sol.
+        T = initial_temperature(1000, 0.9); // Init T
+        N = k*hard_block_list.size();
+        MT = 0;
+        reject = 0;
+    }
+    else{
+        T = initial_temperature(1000, 0.9); // Init T
+        MT = 0;
+        reject = 0;
+    }
+}
+
+// Rollback
+void Info::backup_state(){
+    last_state.E = E;
+    last_state.hard_block_list = hard_block_list;
+    last_state.operands = operands;
+    last_state.operator_chains = operator_chains;
+    last_state.adjacent_op_operands = adjacent_op_operands;
+    last_state.num_operators_in_E = num_operators_in_E;
+}
+
+void Info::rollback_state(){
+    E = last_state.E;
+    hard_block_list = last_state.hard_block_list;
+    operands = last_state.operands;
+    operator_chains = last_state.operator_chains;
+    adjacent_op_operands = last_state.adjacent_op_operands;
+    num_operators_in_E = last_state.num_operators_in_E;
+
+    for (auto& block : hard_block_list) {
+        hard_block_map[block.name] = &block;
+    }
 }
 
 // SA algo.
@@ -197,60 +272,91 @@ int Info::get_subtree_size(int idx) const {
     return subtree_size_table[idx];
 }
 
-vector<Shape> Info::prune_dominated_shapes(vector<Shape>& shapes) {
-    sort(shapes.begin(), shapes.end(), [](const Shape& a, const Shape& b) {
-        return (a.width < b.width) || (a.width == b.width && a.height < b.height);
-    });
-
-    vector<Shape> filtered;
-    long long min_height = LLONG_MAX;
-    for (auto it = shapes.rbegin(); it != shapes.rend(); ++it) {
-        if (it->height < min_height) {
-            filtered.push_back(*it);
-            min_height = it->height;
-        }
-    }
-    reverse(filtered.begin(), filtered.end());
-    return filtered;
-}
-
-int Info::build_shape_list_topdown(int idx) {
+void Info::build_shape_list_topdown(int &idx, PEType type) {
     if (idx < 0 || idx >= E.expr.size()) {
         cout << "[Error] build_shape_list_topdown idx out of bound: " << idx << endl;
         exit(1);
     }
-    PEItem& e = E.expr[idx];
+    int iam = idx;
+    PEItem& e = E.expr[idx--];
 
     if (e.type == PEType::Operand) {
         HardBlock* block = e.hard_block;
-        shape_table[idx] = {
-            Shape(block->width, block->height, false),
-            Shape(block->height, block->width, true)
-        };
-        return idx;
+        if (type == PEType::H){
+            if (block->width < block->height) {
+                shape_table[iam] = {
+                    Shape(block->height, block->width, true), 
+                    Shape(block->width, block->height, false)
+                };
+            } else if (block->width > block->height) {
+                shape_table[iam] = {
+                    Shape(block->width, block->height, false),
+                    Shape(block->height, block->width, true)
+                };
+            } else {
+                shape_table[iam] = {
+                    Shape(block->width, block->height, false)
+                };
+            }
+        }
+        else{
+            if (block->width < block->height) {
+                shape_table[iam] = {
+                    Shape(block->width, block->height, false),
+                    Shape(block->height, block->width, true)
+                };
+            } else if (block->width > block->height) {
+                shape_table[iam] = {
+                    Shape(block->height, block->width, true),
+                    Shape(block->width, block->height, false)
+                };
+            } else {
+                shape_table[iam] = {
+                    Shape(block->width, block->height, false)
+                };
+            }
+        }
+        return;
     }
-
-    int right = build_shape_list_topdown(idx - 1);
-    int left = build_shape_list_topdown(idx - 1 - get_subtree_size(right));
+    int right = idx;
+    build_shape_list_topdown(idx, e.type);
+    int left = idx;
+    build_shape_list_topdown(idx, e.type);
 
     const auto& L = shape_table[left];
     const auto& R = shape_table[right];
     vector<Shape> result;
 
-    for (const auto& l : L) {
-        for (const auto& r : R) {
-            if (e.type == PEType::V)
-                result.emplace_back(l.width + r.width, max(l.height, r.height), false);
-            else
-                result.emplace_back(max(l.width, r.width), l.height + r.height, false);
+    int l_ptr = 0;
+    int r_ptr = 0;
+
+    while(l_ptr < L.size() && r_ptr < R.size()){
+        if (e.type == PEType::V){
+            result.emplace_back(L[l_ptr].width + R[r_ptr].width, max(L[l_ptr].height, R[r_ptr].height), false);
+            if (L[l_ptr].height > R[r_ptr].height) l_ptr++;
+            else if (L[l_ptr].height < R[r_ptr].height) r_ptr++;
+            else {
+                l_ptr++;
+                r_ptr++;
+            }
+        }else{
+            result.emplace_back(max(L[l_ptr].width, R[r_ptr].width), L[l_ptr].height + R[r_ptr].height, false);
+            if (L[l_ptr].width > R[r_ptr].width) l_ptr++;
+            else if (L[l_ptr].width < R[r_ptr].width) r_ptr++;
+            else {
+                l_ptr++;
+                r_ptr++;
+            }
         }
     }
-
-    shape_table[idx] = prune_dominated_shapes(result);
-    // shape_table[idx] = result;
-    return idx;
+    
+    if (e.type != type){
+        reverse(result.begin(), result.end());
+    }
+    shape_table[iam] = result;
 }
-void Info::assign_coordinate_flat(int idx, Shape shape, int x, int y) {
+
+void Info::assign_coordinate(int idx, Shape shape, int x, int y) {
     PEItem& e = E.expr[idx];
 
     if (e.type == PEType::Operand) {
@@ -278,11 +384,11 @@ void Info::assign_coordinate_flat(int idx, Shape shape, int x, int y) {
             }
             if (cw == shape.width && ch == shape.height) {
                 if (e.type == PEType::V) {
-                    assign_coordinate_flat(left, l, x, y);
-                    assign_coordinate_flat(right, r, x + l.width, y);
+                    assign_coordinate(left, l, x, y);
+                    assign_coordinate(right, r, x + l.width, y);
                 } else {
-                    assign_coordinate_flat(left, l, x, y + r.height);
-                    assign_coordinate_flat(right, r, x, y);
+                    assign_coordinate(left, l, x, y + r.height);
+                    assign_coordinate(right, r, x, y);
                 }
                 return;
             }
@@ -294,23 +400,57 @@ void Info::calculate_area_and_axis() {
     build_subtree_size_table();
     shape_table.clear();
     shape_table.resize(E.expr.size());
-
-    int root_idx = build_shape_list_topdown(E.expr.size() - 1);
+    int expr_id = E.expr.size()-1;
+    int root_idx = E.expr.size()-1;
+    build_shape_list_topdown(expr_id, E.expr[expr_id].type);
     const auto& final_shapes = shape_table[root_idx];
+
     const Shape* best = &(*std::min_element(final_shapes.begin(), final_shapes.end(),
-                        [](const Shape& a, const Shape& b) {
+                        [&](const Shape& a, const Shape& b) {
+                            bool valid_a = a.width <= w_h_limit && a.height <= w_h_limit;
+                            bool valid_b = b.width <= w_h_limit && b.height <= w_h_limit;
+                            if (valid_a != valid_b) return valid_a;
                             return a.width * a.height < b.width * b.height;
                         }));
-
-    assign_coordinate_flat(root_idx, *best, 0, 0);
+    assign_coordinate(root_idx, *best, 0, 0);
 }
-
 
 void Info::set_best_epression(long long current_cost){
     best_cost = current_cost;
+    best_wiring_length = current_wiring_length;
     best_E = E;
     best_hard_block_list = hard_block_list;
 }
+
+bool Info::is_floorplan_within_limit(){
+    for (const auto& block : hard_block_list) {
+        int w = block.rotate ? block.height : block.width;
+        int h = block.rotate ? block.width : block.height;
+
+        if (block.x + w > w_h_limit || block.y + h > w_h_limit) {
+            return false;
+        }
+    }
+    return true;
+}
+
+long long Info::dead_space_cost(){
+    /* return : Sum of "area that are outside of bound"*/
+    long long cost = 0;
+    for (const auto& block : hard_block_list) {
+        int w = block.rotate ? block.height : block.width;
+        int h = block.rotate ? block.width : block.height;
+
+        if (block.x + w > w_h_limit) {
+            cost += block.x + w - w_h_limit;
+        }
+        if (block.y + h > w_h_limit) {
+            cost += block.y + h - w_h_limit;
+        }
+    }
+    return cost;
+}
+
 // HPWL:can acclerate to not calculate every block
 long long Info::calculate_wiring_length(){
     int wiring_length = 0;
@@ -347,29 +487,27 @@ long long Info::calculate_wiring_length(){
         }
         wiring_length += (max_x - min_x) + (max_y - min_y);
     }
+    current_wiring_length = wiring_length;
     return wiring_length;
 }
 
-long long Info::calculate_cost(){
+long long Info::calculate_cost(int phase){
     calculate_area_and_axis();
+    if (phase == 1) return 10* dead_space_cost() + calculate_wiring_length();
     return calculate_wiring_length();
 }
 
 // maintainess for movement
 void Info::update_adjacent_chain_data(int i, int j){
     
-    // update adjacent_operands
-    adjacent_operands.erase(remove_if(adjacent_operands.begin(), adjacent_operands.end(), [&](const pair<int,int>&p){return (p.first >= i-1 && p.first <= j);}),adjacent_operands.end());
+    // update operands
+    initial_operands();
 
     // update adjacent_op_operands
     adjacent_op_operands.erase(remove_if(adjacent_op_operands.begin(), adjacent_op_operands.end(), [&](const pair<int,int>&p){return (p.first >= i-1 && p.first <= j);}),adjacent_op_operands.end());
 
     for (int k = i-1; k <= j; k++){
         if (k >= 0 && k+1 < E.expr.size()){
-            // update adjacent_operands
-            if (E.expr[k].type == PEType::Operand && E.expr[k + 1].type == PEType::Operand) {
-                adjacent_operands.emplace_back(k, k + 1);
-            }
             // update adjacent_op_operands
             bool is_op1 = E.expr[k].type != PEType::Operand;
             bool is_op2 = E.expr[k + 1].type != PEType::Operand;
@@ -381,20 +519,15 @@ void Info::update_adjacent_chain_data(int i, int j){
 
     // update operator_chain
     initial_chain_operators();
-    // int start = -1;
-    // for (int k = max(0, i - 2); k <= min((int)E.expr.size() - 1, j + 2); k++) {
-    //     if (E.expr[k].type != PEType::Operand) {
-    //         if (start == -1) start = k;
-    //     } else {
-    //         if (start != -1) {
-    //             if (k - start >= 1) operator_chains.emplace_back(start, k - 1);
-    //             start = -1;
-    //         }
-    //     }
-    // }
-    // if (start != -1 && E.expr.size() - start >= 1) {
-    //     operator_chains.emplace_back(start, E.expr.size() - 1);
-    // }
+}
+
+// constraint
+void Info::get_floorplan_limit(){
+    long long total_area = 0;
+    for (const auto& block : hard_block_list){
+        total_area += block.width * block.height; 
+    }
+    w_h_limit = floor(sqrt(total_area * (1.0 + dead_space_ratio)));
 }
 
 // func. for movement
@@ -414,13 +547,12 @@ bool Info::is_valid_expr(int i, int j){
 }
 
 bool Info::M1_move(){
-    /* Swap two operands */
-    if (adjacent_operands.empty()) return false;
+    /* Randomly swap two operands */
+    if (operands.empty()) return false;
 
-    int choice = rand() % adjacent_operands.size();
-    auto [i, j] = adjacent_operands[choice];
-    swap(E.expr[i], E.expr[j]);
-    
+    int first_choice = rand() % operands.size();
+    int second_choice = rand() % operands.size();
+    swap(E.expr[operands[first_choice]], E.expr[operands[second_choice]]);
     return true;
 }
 
@@ -431,11 +563,8 @@ bool Info::M2_move(){
     auto[start, end] = operator_chains[choice];
     for(int i = start; i <= end; i++){
         if (E.expr[i].type == PEType::Operand){
-            for (auto& [start, end] : operator_chains) {
-                for (int i = start; i <= end; i++) {
-                    cout << i << ": " << (E.expr[i].type == PEType::Operand ? "Operand" : "Op") << endl;
-                }
-            }            
+            cout << "WRONG: M2 [Operand in operator_chains]" << endl;      
+            exit(1);
         }
         E.expr[i].type = invert_type(E.expr[i].type);
     }
@@ -467,20 +596,22 @@ bool Info::M3_move(){
         }
     }
     swap(E.expr[i], E.expr[j]);
-    // will effect adjacent_operands/ operator_chains/ adjacent_op_operands -> change later
     update_adjacent_chain_data(i, j);
     return true;
 }
-/*
-bool Info::selectMove() {
-    double r = (double)rand() / RAND_MAX;
 
-    if (r < 0.5) return M1_move();         // 50%
-    else if (r < 0.8) return M2_move();    // 30%
-    else return M3_move();                // 20%
-}
-*/
+// bool Info::select_move() {
+//     double r = (double)rand() / RAND_MAX;
+
+//     if (r < 0.5) return M1_move();         // 50%
+//     else if (r < 0.8) return M2_move();    // 30%
+//     else return M3_move();                // 20%
+// }
+
 bool Info::select_move(){
+    shape_table.clear(); 
+    subtree_size_table.clear();
+    backup_state();
     int move_type = rand() % 3;
     switch (move_type){
         case 0: return M1_move();
@@ -490,35 +621,68 @@ bool Info::select_move(){
     }
 }
 
+
 void Info::SA_algo(int ϵ){
-    initialize(5); // Init T/E/M/N : param:k=5 * n-> uphill times
     int r = 0.85;
-    cout << "Best wiring length: " << best_cost << endl;
+    initialize(10, 1); // Init T/E/M/N : param:k=5 * n-> uphill times
+    cout << "Initial valid?" << is_floorplan_within_limit() << endl;
+    cout << "Initial wiring length: " << current_wiring_length << endl;
+    /*-------------------Area Minimize Phase--------------------*/
     while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
         MT = 0;
         reject = 0;
         uphill = 0;
         while(uphill <= N && MT <= 2*N){
-            shape_table.clear(); subtree_size_table.clear();
             while (!select_move());
-            long long current_cost = calculate_cost();
-            MT++;
+            long long current_cost = calculate_cost(1);
             long long delta_c = current_cost - last_cost;
             double random = (double)rand() / RAND_MAX;
+            MT++;
             if (delta_c <= 0 || random < exp(-delta_c/T)){
                 if (delta_c > 0){
                     uphill++;
                 }
                 if (current_cost < best_cost){
                     set_best_epression(current_cost);
-                    cout << "Best wiring length: " << best_cost << endl;
+                    cout << "[Phase 1] New best wiring length: " << best_cost << endl;
                 }
             }
             else{
+                rollback_state();
                 reject++;
             } 
             last_cost = current_cost;
         }
         T *= r;
     }
+    /*---------------Wiring length Minimize Phase----------------*/
+    initialize(10, 2);
+    while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
+        MT = 0;
+        reject = 0;
+        uphill = 0;
+        while(uphill <= N && MT <= 2*N){
+            while (!M1_move());
+            long long current_cost = calculate_cost(2);
+            long long delta_c = current_cost - last_cost;
+            double random = (double)rand() / RAND_MAX;
+            MT++;
+            if (delta_c <= 0 || random < exp(-delta_c/T)){
+                if (delta_c > 0){
+                    uphill++;
+                }
+                if (current_cost < best_cost){
+                    set_best_epression(current_cost);
+                    cout << "[Phase 2] New best wiring length: " << best_cost << endl;
+                }
+            }
+            else{
+                rollback_state();
+                reject++;
+            } 
+            last_cost = current_cost;
+        }
+        T *= r;
+    }
+    cout << "[SA algo. finish]\n" ;
 }

@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -std=c++17 -Ofast
+CFLAGS=-Wall -std=c++17 -O0 -g
 INCLUDES=
 HEADERS=$(wildcard *.h)
 LFLAGS=

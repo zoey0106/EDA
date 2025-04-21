@@ -10,7 +10,7 @@ int main(int argc, char *argv[]){
     Info info;
     ifstream input = read_file(argv[1]);
     build_data_structure(info, input); // Init data info
-    cout << "OK";
+    info.dead_space_ratio = stod(argv[3]);
     // SA algo.
     info.SA_algo(5); //ϵ: threshold
 

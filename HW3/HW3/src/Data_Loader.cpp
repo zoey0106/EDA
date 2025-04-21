@@ -144,7 +144,7 @@ void write_output(Info& info, string filename){
         exit(1);
     }
     // info.cut_size_compute();
-    fout << "Wirelength " << info.best_cost << endl;
+    fout << "Wirelength " << info.best_wiring_length << endl;
 
     fout << "NumHardBlocks " << info.best_hard_block_list.size() << endl;
     for (int i = 0; i < info.best_hard_block_list.size(); i++){
