@@ -1,12 +1,12 @@
 #include <iostream>
 #include <fstream>
+#include <random>
 #include "Data_Loader.h"
 #include "Data_Structure.h"
 using namespace std;
 // do not consider dead-space ratio now
 int main(int argc, char *argv[]){
     // Input data
-    srand(42);
     Info info;
     ifstream input = read_file(argv[1]);
     build_data_structure(info, input); // Init data info

@@ -95,6 +95,7 @@ class Info{
         unordered_map<string, Net*> net_map;
         // SA movement
         vector<int> operands;
+        // vector<pair<int, int>> adjacent_operands;
         vector<pair<int, int>> operator_chains;
         vector<pair<int, int>> adjacent_op_operands;
         // Termination
@@ -125,6 +126,7 @@ class Info{
         bool M1_move();
         bool M2_move();
         bool M3_move();
+        bool M1_move_random();
         bool select_move();
         bool is_valid_expr(int i, int j); // for M3
         // Rollback
@@ -135,7 +137,7 @@ class Info{
         // Cost
         long long calculate_cost(int phase);
         long long calculate_wiring_length();
-        void calculate_area_and_axis();
+        long long calculate_area_and_axis();
         void set_best_epression(long long current_cost);
         void assign_coordinate(int idx, Shape shape, int x, int y);
         void build_shape_list_topdown(int& idx, PEType type);
@@ -154,6 +156,7 @@ class Info{
         void initial_chain_operators();
         void initial_op_operands();
         void initial_num_operators_in_E();
+        // void initial_adjacent_operands();
         // -----initial_movement_data-----//
         // Init expr
         void initial_PolishExpr(); // Init E

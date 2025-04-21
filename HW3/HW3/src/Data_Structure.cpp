@@ -11,7 +11,7 @@
 #include <stack>
 #include <functional>
 #include <cassert>
-
+#include <numeric>
 // Net
 Net::Net(string net_name, vector<string> pin_list){
     name = net_name;
@@ -79,6 +79,20 @@ void Info::print_E(){
     }
 }
 
+// void Info::initial_adjacent_operands(){
+//     adjacent_operands.clear();
+//     int ptr = 0;
+//     int last_ptr = 0;
+//     while(ptr < E.expr.size()){
+
+//     }
+//     for (int i = 0; i < E.expr.size(); i++){
+//         if (E.expr[i].type == PEType::Operand && E.expr[i+1].type == PEType::Operand){
+//             operands.emplace_back(i, i+1);
+//         }
+//     }
+// }
+
 void Info::initial_operands(){
     operands.clear();
     for (int i = 0; i < E.expr.size(); i++){
@@ -128,6 +142,57 @@ void Info::initial_num_operators_in_E(){
 }
 
 // SA algo. init
+
+// void Info::init_expr(){
+//     vector<PEItem> expr;
+//     cout << "w_h_limit " << w_h_limit << endl;
+//     long long now_width = 0;
+//     long long row_count = 0;
+//     long long col_count = 0;
+//     long long horizontal_count = 0;
+
+//     // sort cell by height (optional)
+//     vector<int> sorted(hard_block_list.size());
+//     for (int i = 0; i < hard_block_list.size(); ++i) {
+//         sorted[i] = i;
+//     }
+
+//     sort(sorted.begin(), sorted.end(), [&](int a, int b) {
+//         return hard_block_list[a].height > hard_block_list[b].height;
+//     });
+
+//     for (int i = 0; i < sorted.size(); ++i) {
+        
+//         const HardBlock &c = hard_block_list[sorted[i]];
+//         now_width += c.width;
+        
+//         if (now_width > w_h_limit) {
+//             row_count++;
+//             if (row_count >= 2) {
+//                 expr.emplace_back(PEType::H);
+//                 horizontal_count++;
+//                 row_count = 1;
+//             }
+
+//             now_width = c.width;
+//             col_count = 0;
+//         }
+
+//         expr.emplace_back(PEType::Operand, &hard_block_list[sorted[i]]);
+        
+//         col_count++;
+//         if (col_count >= 2) {
+//             expr.emplace_back(PEType::V);
+//             col_count = 1;
+//             horizontal_count++;
+//         }
+//     }
+//     for (int i = horizontal_count; i < hard_block_list.size() - 1; ++i) {
+//         expr.emplace_back(PEType::H);
+//     }
+//     E.expr = expr;
+// }
+
 
 void Info::init_expr(){
     vector<PEItem> expr;
@@ -196,12 +261,33 @@ void Info::initial_PolishExpr(){
     best_wiring_length = current_wiring_length;
     last_cost = best_cost;
     initial_movement_data();
-    set_best_epression(best_wiring_length);
+    set_best_epression(best_cost);
 }
 
 double Info::initial_temperature(int sample_size, double p){
-    // final optimization
-    return 100000;
+    // // final optimization
+    vector<double> deltas;
+    double original_cost = calculate_cost(2);
+
+    for (int i = 0; i < sample_size; ++i) {
+        shape_table.clear(); 
+        subtree_size_table.clear();
+        backup_state();
+        while (!select_move()); 
+        double new_cost = calculate_cost(2);
+        double delta = new_cost - original_cost;
+
+        if (delta > 0) {  
+            deltas.push_back(delta);
+        }
+
+        rollback_state(); 
+    }
+
+    if (deltas.empty()) return 1.0; 
+
+    double avg_uphill = accumulate(deltas.begin(), deltas.end(), 0.0) / deltas.size();
+    return -avg_uphill / log(p);
 }
 
 void Info::initialize(int k, int phase){
@@ -377,9 +463,9 @@ void Info::assign_coordinate(int idx, Shape shape, int x, int y) {
             long long cw, ch;
             if (e.type == PEType::V) {
                 cw = l.width + r.width;
-                ch = std::max(l.height, r.height);
+                ch = max(l.height, r.height);
             } else {
-                cw = std::max(l.width, r.width);
+                cw = max(l.width, r.width);
                 ch = l.height + r.height;
             }
             if (cw == shape.width && ch == shape.height) {
@@ -387,8 +473,8 @@ void Info::assign_coordinate(int idx, Shape shape, int x, int y) {
                     assign_coordinate(left, l, x, y);
                     assign_coordinate(right, r, x + l.width, y);
                 } else {
-                    assign_coordinate(left, l, x, y + r.height);
-                    assign_coordinate(right, r, x, y);
+                    assign_coordinate(left, l, x, y);
+                    assign_coordinate(right, r, x, y + l.height);
                 }
                 return;
             }
@@ -396,7 +482,26 @@ void Info::assign_coordinate(int idx, Shape shape, int x, int y) {
     }
 }
 
-void Info::calculate_area_and_axis() {
+// void Info::calculate_area_and_axis() {
+//     build_subtree_size_table();
+//     shape_table.clear();
+//     shape_table.resize(E.expr.size());
+//     int expr_id = E.expr.size()-1;
+//     int root_idx = E.expr.size()-1;
+//     build_shape_list_topdown(expr_id, E.expr[expr_id].type);
+//     const auto& final_shapes = shape_table[root_idx];
+
+//     const Shape* best = &(*std::min_element(final_shapes.begin(), final_shapes.end(),
+//                         [&](const Shape& a, const Shape& b) {
+//                             bool valid_a = a.width <= w_h_limit && a.height <= w_h_limit;
+//                             bool valid_b = b.width <= w_h_limit && b.height <= w_h_limit;
+//                             if (valid_a != valid_b) return valid_a;
+//                             return a.width * a.height < b.width * b.height;
+//                         }));
+//     assign_coordinate(root_idx, *best, 0, 0);
+// }
+
+long long Info::calculate_area_and_axis() {
     build_subtree_size_table();
     shape_table.clear();
     shape_table.resize(E.expr.size());
@@ -405,14 +510,30 @@ void Info::calculate_area_and_axis() {
     build_shape_list_topdown(expr_id, E.expr[expr_id].type);
     const auto& final_shapes = shape_table[root_idx];
 
-    const Shape* best = &(*std::min_element(final_shapes.begin(), final_shapes.end(),
-                        [&](const Shape& a, const Shape& b) {
-                            bool valid_a = a.width <= w_h_limit && a.height <= w_h_limit;
-                            bool valid_b = b.width <= w_h_limit && b.height <= w_h_limit;
-                            if (valid_a != valid_b) return valid_a;
-                            return a.width * a.height < b.width * b.height;
-                        }));
+    int shape_idx = 0;
+    int chosen_idx = -1;
+    long long exceed_area = 0;
+    long long min_area = LLONG_MAX;
+    for (const auto& shape: final_shapes){
+        exceed_area = 0;
+        if (shape.height > w_h_limit && shape.width > w_h_limit){
+            exceed_area = shape.height * shape.width - w_h_limit*w_h_limit;
+        }
+        else if (shape.height > w_h_limit){
+            exceed_area = (shape.height - w_h_limit) * w_h_limit;
+        }
+        else if (shape.width > w_h_limit){
+            exceed_area = (shape.width - w_h_limit) * w_h_limit;
+        }
+        if (min_area > exceed_area){
+            min_area = exceed_area;
+            chosen_idx = shape_idx;
+        }
+        shape_idx++;
+    }
+    const Shape* best = &final_shapes[chosen_idx];
     assign_coordinate(root_idx, *best, 0, 0);
+    return min_area;
 }
 
 void Info::set_best_epression(long long current_cost){
@@ -491,10 +612,22 @@ long long Info::calculate_wiring_length(){
     return wiring_length;
 }
 
+// long long Info::calculate_cost(int phase){
+//     calculate_area_and_axis();
+//     if (phase == 1){
+//         calculate_wiring_length();
+//         return 10* dead_space_cost();
+//     }
+//     return calculate_wiring_length();
+// }
+
 long long Info::calculate_cost(int phase){
-    calculate_area_and_axis();
-    if (phase == 1) return 10* dead_space_cost() + calculate_wiring_length();
-    return calculate_wiring_length();
+    if (phase == 1){
+        long long area = calculate_area_and_axis();
+        calculate_wiring_length();
+        return area;
+    }
+    return calculate_area_and_axis()*20 + calculate_wiring_length();
 }
 
 // maintainess for movement
@@ -546,13 +679,20 @@ bool Info::is_valid_expr(int i, int j){
     return false;
 }
 
-bool Info::M1_move(){
+bool Info::M1_move_random(){
     /* Randomly swap two operands */
     if (operands.empty()) return false;
 
     int first_choice = rand() % operands.size();
     int second_choice = rand() % operands.size();
     swap(E.expr[operands[first_choice]], E.expr[operands[second_choice]]);
+    return true;
+}
+
+bool Info::M1_move(){
+    /* Randomly swap two operands */
+    int random = rand() % (operands.size()-1);
+    swap(E.expr[operands[random]], E.expr[operands[random+1]]);
     return true;
 }
 
@@ -609,9 +749,6 @@ bool Info::M3_move(){
 // }
 
 bool Info::select_move(){
-    shape_table.clear(); 
-    subtree_size_table.clear();
-    backup_state();
     int move_type = rand() % 3;
     switch (move_type){
         case 0: return M1_move();
@@ -624,48 +761,67 @@ bool Info::select_move(){
 
 void Info::SA_algo(int ϵ){
     int r = 0.85;
-    initialize(10, 1); // Init T/E/M/N : param:k=5 * n-> uphill times
+    initialize(5, 1); // Init T/E/M/N : param:k=5 * n-> uphill times
     cout << "Initial valid?" << is_floorplan_within_limit() << endl;
-    cout << "Initial wiring length: " << current_wiring_length << endl;
+    cout << "Initial best cost: " << best_cost << endl;
+    cout << "Initial wiring length: " << best_wiring_length << endl;
+    bool flag = is_floorplan_within_limit();
+    int j = 0;
+    cin >> j;
     /*-------------------Area Minimize Phase--------------------*/
-    while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
-        MT = 0;
-        reject = 0;
-        uphill = 0;
-        while(uphill <= N && MT <= 2*N){
-            while (!select_move());
-            long long current_cost = calculate_cost(1);
-            long long delta_c = current_cost - last_cost;
-            double random = (double)rand() / RAND_MAX;
-            MT++;
-            if (delta_c <= 0 || random < exp(-delta_c/T)){
-                if (delta_c > 0){
-                    uphill++;
+    if (!flag){
+        while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
+            MT = 0;
+            reject = 0;
+            uphill = 0;
+            while(uphill <= N && MT <= 2*N){
+                shape_table.clear(); 
+                subtree_size_table.clear();
+                backup_state();
+                while (!select_move());
+                long long current_cost = calculate_cost(1);
+                long long delta_c = current_cost - last_cost;
+                double random = (double)rand() / RAND_MAX; 
+                MT++;
+                cout << "[Phase 1] Current cost: " << current_cost << " ";
+                if (delta_c <= 0 || random < exp(-delta_c/T)){
+                    if (delta_c > 0){
+                        uphill++;
+                    }
+                    if (current_cost < best_cost){
+                        set_best_epression(current_cost);
+                        cout << "[Phase 1] New best wiring length: " << current_wiring_length << endl;
+                    }
+                    last_cost = current_cost;
+                    cout << " [Accept] \n";
                 }
-                if (current_cost < best_cost){
-                    set_best_epression(current_cost);
-                    cout << "[Phase 1] New best wiring length: " << best_cost << endl;
-                }
+                else{
+                    rollback_state();
+                    reject++;
+                    cout << " [Reject] \n";
+                } 
             }
-            else{
-                rollback_state();
-                reject++;
-            } 
-            last_cost = current_cost;
+            T *= r;
         }
-        T *= r;
     }
     /*---------------Wiring length Minimize Phase----------------*/
-    initialize(10, 2);
+    if(!flag){
+        initialize(5, 2);
+    }
+    best_cost = calculate_cost(2);
     while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= ϵ){
         MT = 0;
         reject = 0;
         uphill = 0;
         while(uphill <= N && MT <= 2*N){
+            shape_table.clear(); 
+            subtree_size_table.clear();
+            backup_state();
             while (!M1_move());
             long long current_cost = calculate_cost(2);
             long long delta_c = current_cost - last_cost;
             double random = (double)rand() / RAND_MAX;
+            cout << "[Phase 2] Current cost: " << current_cost << " ";
             MT++;
             if (delta_c <= 0 || random < exp(-delta_c/T)){
                 if (delta_c > 0){
@@ -673,14 +829,16 @@ void Info::SA_algo(int ϵ){
                 }
                 if (current_cost < best_cost){
                     set_best_epression(current_cost);
-                    cout << "[Phase 2] New best wiring length: " << best_cost << endl;
+                    cout << "[Phase 2] New best wiring length: " << current_wiring_length << endl;
                 }
+                last_cost = current_cost;
+                cout << " [Accept] \n";
             }
             else{
                 rollback_state();
                 reject++;
+                cout << " [Reject] \n";
             } 
-            last_cost = current_cost;
         }
         T *= r;
     }
