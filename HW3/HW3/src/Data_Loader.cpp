@@ -67,9 +67,6 @@ void build_data_structure(Info& info, ifstream& input){
             tokens = slice_line(line);
             info.hard_block_list.push_back(build_hard_blocks_info(input, tokens));
         }
-        for (auto& hard_block: info.hard_block_list){
-            info.hard_block_map[hard_block.name] = &hard_block;
-        }
     };
     // Build Pads
     commandMap["NumPads"] = [&](ifstream& input, vector<string>& tokens) {
@@ -146,9 +143,9 @@ void write_output(Info& info, string filename){
     // info.cut_size_compute();
     fout << "Wirelength " << info.best_wiring_length << endl;
 
-    fout << "NumHardBlocks " << info.best_hard_block_list.size() << endl;
-    for (int i = 0; i < info.best_hard_block_list.size(); i++){
-        fout << info.best_hard_block_list[i].name << " " << info.best_hard_block_list[i].x << " "<< info.best_hard_block_list[i].y << " "<< info.best_hard_block_list[i].rotate << endl;
+    fout << "NumHardBlocks " << info.hard_block_list.size() << endl;
+    for (int i = 0; i < info.hard_block_list.size(); i++){
+        fout << info.hard_block_list[i].name << " " << info.hard_block_list[i].x << " "<< info.hard_block_list[i].y << " "<< info.hard_block_list[i].rotate << endl;
     }
 
     fout.close();
