@@ -1,4 +1,5 @@
 #include "Data_Structure.h" 
+#include "Global_param.h"
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
@@ -12,6 +13,7 @@
 #include <functional>
 #include <cassert>
 #include <numeric>
+#include <chrono>
 // Net
 Net::Net(string net_name, vector<string> pin_list){
     name = net_name;
@@ -37,20 +39,10 @@ HardBlock::HardBlock(string block_name, long long w, long long h){
 
 // SA setting
 void SA_Setting::reset(){
-    long long k = 5;
-    double ϵ = 1.0;
-    double r = 0.9;
-    double T = 1000.0;
-
-    // Wiring length minimization
-
-    double f_ϵ = 100.0;
-    double f_T = 100.0;
-    long long f_k = 10;
-    long long iter = 0;
-
-    double high_T = 4000000.0;
-    long long threshold = 100;
+    k = 5;
+    eps = 1.0;
+    r = 0.9;
+    T = 1000.0;
 }
 // Info
 // error check
@@ -63,7 +55,7 @@ void Info::print_E(){
     }
 }
 
-vector<int> Info::initial_operands(PolishExpr old_E){
+vector<int> Info::initial_operands(PolishExpr &old_E){
     vector<int> operands;
     operands.clear();
     for (int i = 0; i < old_E.expr.size(); i++){
@@ -134,13 +126,16 @@ void Info::init_expr(){
     }
 
     sort(sorted.begin(), sorted.end(), [&](int a, int b) {
-        return hard_block_list[a].height > hard_block_list[b].height;
+        return max(hard_block_list[a].height,hard_block_list[a].width) > max(hard_block_list[b].height,hard_block_list[b].width);
     });
 
     for (int i = 0; i < sorted.size(); ++i) {
         
-        const HardBlock &c = hard_block_list[sorted[i]];
-        now_width += c.width;
+        HardBlock &c = hard_block_list[sorted[i]];
+        if (c.width > c.height){
+            c.rotate = true; // 用比較大的那邊先排
+        }
+        now_width += c.rotate ? c.height: c.width;
         
         if (now_width > w_h_limit) {
             row_count++;
@@ -150,7 +145,7 @@ void Info::init_expr(){
                 row_count = 1;
             }
 
-            now_width = c.width;
+            now_width = c.rotate ? c.height: c.width;
             col_count = 0;
         }
 
@@ -180,12 +175,13 @@ void Info::initial_PolishExpr(){
     /*initialize Expression E & data*/
     init_expr();
     best_E = E.expr;
+    valid_E = E;
 }
 
 // SA algo.
 
 // Area computation for hard blocks
-void Info::build_subtree_size_table(PolishExpr NE) {
+void Info::build_subtree_size_table(PolishExpr &NE) {
     subtree_size_table.clear();
     subtree_size_table.resize(NE.expr.size(), 0);
 
@@ -211,7 +207,7 @@ int Info::get_subtree_size(int idx) const {
     return subtree_size_table[idx];
 }
 
-void Info::build_shape_list_topdown(int &idx, PEType type, PolishExpr NE) {
+void Info::build_shape_list_topdown(int &idx, PEType type, PolishExpr& NE) {
     if (idx < 0 || idx >= NE.expr.size()) {
         cout << "[Error] build_shape_list_topdown idx out of bound: " << idx << endl;
         exit(1);
@@ -351,8 +347,9 @@ long long Info::calculate_area_and_axis(PolishExpr &NE) {
 
     int shape_idx = 0;
     int chosen_idx = -1;
+    int sol_idx = -1;
     long long exceed_area = 0;
-    long long min_area = LLONG_MAX;
+    long long min_area = LLONG_MAX, sol_min = LLONG_MAX;
     for (const auto& shape: final_shapes){
         exceed_area = 0;
         if (shape.height > w_h_limit && shape.width > w_h_limit){
@@ -363,6 +360,11 @@ long long Info::calculate_area_and_axis(PolishExpr &NE) {
         }
         else if (shape.width > w_h_limit){
             exceed_area = (shape.width - w_h_limit) * w_h_limit;
+        } else {
+            if (shape.height * shape.width < sol_min) {
+                sol_idx = shape_idx;
+                sol_min = shape.height * shape.width;
+            }
         }
         if (min_area > exceed_area){
             min_area = exceed_area;
@@ -370,6 +372,8 @@ long long Info::calculate_area_and_axis(PolishExpr &NE) {
         }
         shape_idx++;
     }
+    if (sol_idx != -1)
+        chosen_idx = sol_idx;
     const Shape* best = &final_shapes[chosen_idx];
     assign_coordinate(root_idx, *best, 0, 0, NE);
     return min_area;
@@ -385,23 +389,6 @@ bool Info::is_floorplan_within_limit(){
         }
     }
     return true;
-}
-
-long long Info::dead_space_cost(){
-    /* return : Sum of "area that are outside of bound"*/
-    long long cost = 0;
-    for (const auto& block : hard_block_list) {
-        int w = block.rotate ? block.height : block.width;
-        int h = block.rotate ? block.width : block.height;
-
-        if (block.x + w > w_h_limit) {
-            cost += block.x + w - w_h_limit;
-        }
-        if (block.y + h > w_h_limit) {
-            cost += block.y + h - w_h_limit;
-        }
-    }
-    return cost;
 }
 
 // HPWL:can acclerate to not calculate every block
@@ -451,21 +438,29 @@ long long Info::calculate_wiring_length(PolishExpr NE){
         }
         wiring_length += (max_x - min_x) + (max_y - min_y);
     }
+
     return wiring_length;
 }
 
 long long Info::calculate_cost(PolishExpr NE, bool outline){
     long long min_area = calculate_area_and_axis(NE);
+    long long wiring_length = calculate_wiring_length(NE);
+    
+    if (wiring_length < lowest_length && min_area == 0) {
+        valid_flag = true;
+        lowest_length = wiring_length;
+    }
+    else valid_flag = false;
+
     if (outline) {
         if (min_area == 0){
-            return calculate_wiring_length(NE);
+            return wiring_length;
         }
         else {
-            calculate_wiring_length(NE); // should be eliminate
             return min_area + 1000000000LL;
         }
     }
-    return min_area*20 + calculate_wiring_length(NE); 
+    return min_area*128 + wiring_length; 
 }
 
 // constraint
@@ -486,6 +481,16 @@ PEType invert_type(PEType type){
     return PEType::H;
 }
 
+void Info::swap_expr(int i, int j, PolishExpr &old_E){
+    PEType temp_type = old_E.expr[i].type;
+    old_E.expr[i].type = old_E.expr[j].type;
+    old_E.expr[j].type = temp_type;
+
+    HardBlock* temp_block = old_E.expr[i].hard_block;
+    old_E.expr[i].hard_block = old_E.expr[j].hard_block;
+    old_E.expr[j].hard_block = temp_block;
+}
+
 bool Info::is_valid_expr(int i, int j, vector<int> num_operators_in_E){
     /* return true: valid swap
        return false: invalid swap */
@@ -496,8 +501,22 @@ bool Info::is_valid_expr(int i, int j, vector<int> num_operators_in_E){
 PolishExpr Info::M1_move(PolishExpr old_E){
     /* Randomly swap two operands */
     vector<int> operands = initial_operands(old_E);
-    int random_first = rand() % (operands.size()-1);
-    int random_second = rand() % (operands.size()-1);
+    uniform_int_distribution<int> dist(0, operands.size() - 2); 
+    int random = dist(gen);
+    // swap_expr(operands[random], operands[random+1], old_E);
+    swap(old_E.expr[operands[random]], old_E.expr[operands[random+1]]);
+    return old_E;
+}
+
+PolishExpr Info::M1_random(PolishExpr old_E){
+    /* Randomly swap two operands */
+    vector<int> operands = initial_operands(old_E);
+    uniform_int_distribution<int> dist(0, operands.size() - 1);
+    int random_first = dist(gen);
+    int random_second;
+    do {
+        random_second = dist(gen);
+    } while (random_first == random_second);
     swap(old_E.expr[operands[random_first]], old_E.expr[operands[random_second]]);
     return old_E;
 }
@@ -549,80 +568,74 @@ PolishExpr Info::M3_move(PolishExpr old_E){
 }
 
 PolishExpr Info::select_move(PolishExpr old_E){
-    int move_type = rand() % 3;
+    vector<int> operands = initial_operands(old_E);
+    uniform_int_distribution<int> dist(0, 1);
+    int move_type = dist(gen);
     switch (move_type){
-        case 0: return M1_move(old_E);
-        case 1: return M2_move(old_E);
-        case 2: return M3_move(old_E);
-        default: return old_E;
+        case 0: return M1_random(old_E);
+        case 1: return M1_move(old_E);
     }
 }
 
 double Info::T_secheduling(double T, bool outline){
-    if (outline) return T * setting.r;
-    setting.iter++;
-    if (setting.iter < setting.threshold) return setting.high_T;
-    else if (setting.iter == setting.threshold){
-        return setting.T;
-    }
     return T * setting.r;
 }
 
 void Info::SA_algo(bool outline){
     setting.reset();
-    if (outline) setting.r = 0.97;
-    else setting.r = 0.995;
+    if (outline){
+        setting.r = 0.9;
+        setting.eps = 0.0004;
+    }
+    else setting.r = 0.997;
 
     double MT = 0, reject = 0, T = setting.T;
     int epoch = 0, uphill = 0, N = setting.k * hard_block_list.size();
-
+    cout << "N: " << N << endl;
     best_cost = calculate_cost(E, outline);
+    long long old_cost = best_cost;
     cout << "Initial best cost: " << best_cost << "\n";
     if (best_cost == 0 && outline){
-        cout << "[Success] Outline satisfied. Continuing to minimizing wirelength" ;
+        cout << "[Success] Outline satisfied. Continuing to minimizing wirelength";
     }
 
-    do{
-        while(true){
-            MT = 0;
-            reject = 0;
-            uphill = 0;
-            while(uphill <= N && MT <= 2*N){
-                epoch++;
-                PolishExpr NE = select_move(E);
-                long long old_cost = best_cost;
-                long long new_cost = calculate_cost(NE, outline);
-                long long delta_c = new_cost - old_cost;
-                double random = (double)rand() / RAND_MAX; 
-                MT++;
-                if (delta_c <= 0 || random < exp(-delta_c/T)){
-                    E = NE;
-                    best_cost = new_cost;
-                    if (delta_c > 0){
-                        uphill++;
-                    }
+    
+    while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= setting.eps){
+        MT = 0;
+        reject = 0;
+        uphill = 0;
+        while(uphill <= N && MT <= 2*N){
+            PolishExpr NE = select_move(E);
+            long long new_cost = calculate_cost(NE, outline);
+            long long delta_c = new_cost - old_cost;
+            uniform_real_distribution<double> dist(0.0, 1.0);
+            MT++;
+            if (delta_c <= 0){
+                E = NE;
+                old_cost = new_cost;
 
-                    if (delta_c <= 0 && best_cost < old_cost){
-                        best_E = NE;
-                        cout << "New cost: " << new_cost << "\n";
-                        if (best_cost == 0 && outline){
-                            goto END;
-                        } 
-                    }
+                if (new_cost < best_cost){
+                    best_E = NE;
+                    best_cost = new_cost;
+                    if (valid_flag) valid_E = NE;
+                }
+            }
+            else{
+                double random = dist(gen); 
+                if (random < exp(-delta_c/T)){
+                    uphill++;
+                    E = NE;
+                    old_cost = new_cost;
                 }
                 else{
                     reject++;
-                } 
-                if (epoch >= 7000) {
-                    cout << "[Epoch Finish]\n";
-                    goto END;
                 }
-            }
-            T = T_secheduling(T, outline);
-            if ((reject/(MT == 0 ? 1 : MT)) > 0.95 || T < setting.ϵ) break;
+            } 
         }
-    }while(outline);
-END:
+        T = T_secheduling(T, outline);
+        cout << "Last cost:  " << old_cost << " [ T: " << T << " ]\n";
+    }
+
     E = best_E;
     calculate_area_and_axis(E);
     best_wiring_length = calculate_wiring_length(E);

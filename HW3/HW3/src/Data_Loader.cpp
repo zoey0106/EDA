@@ -140,8 +140,10 @@ void write_output(Info& info, string filename){
         cout << "File path_name: " << output_file_path;
         exit(1);
     }
-    // info.cut_size_compute();
-    fout << "Wirelength " << info.best_wiring_length << endl;
+
+    info.calculate_area_and_axis(info.valid_E);
+
+    fout << "Wirelength " << info.calculate_wiring_length(info.valid_E) << endl;
 
     fout << "NumHardBlocks " << info.hard_block_list.size() << endl;
     for (int i = 0; i < info.hard_block_list.size(); i++){

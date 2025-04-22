@@ -9,6 +9,7 @@ using namespace std;
 #include <deque>
 #include <set>
 #include <memory>
+#include <climits>
 class Net{
     public:
         Net() = default;;
@@ -76,20 +77,10 @@ class PolishExpr{
 class SA_Setting{
     public:
         SA_Setting() = default;
-        long long k = 10;
-        double ϵ = 1.0;
+        long long k = 5;
+        double eps = 1.0;
         double r = 0.9;
-        double T = 1000.0;
-
-        // Wiring length minimization
-
-        double f_ϵ = 100.0;
-        double f_T = 100.0;
-        long long f_k = 10;
-        long long iter = 0;
-
-        double high_T = 4000000.0;
-        long long threshold = 100;
+        double T = 1500.0;
         void reset();
 };
 
@@ -109,6 +100,11 @@ class Info{
         PolishExpr best_E;
         long long best_wiring_length;
         long long best_cost;
+        // return. Expr
+        bool valid_flag = false;
+        bool lower_length = false;
+        long long lowest_length = LLONG_MAX;
+        PolishExpr valid_E;
         // cost
         vector<vector<Shape>> shape_table;
         vector<int> subtree_size_table;
@@ -118,10 +114,12 @@ class Info{
         // [func. for SA algo.]
         void SA_algo(bool outline);
         PolishExpr M1_move(PolishExpr old_E);
+        PolishExpr M1_random(PolishExpr old_E);
         PolishExpr M2_move(PolishExpr old_E);
         PolishExpr M3_move(PolishExpr old_E);
         PolishExpr select_move(PolishExpr old_E);
         bool is_valid_expr(int i, int j, vector<int> num_operators_in_E); // for M3
+        void swap_expr(int i, int j, PolishExpr &old_E);
         // T schedule
         double T_secheduling(double T, bool outline);
         // Cost
@@ -129,16 +127,15 @@ class Info{
         long long calculate_wiring_length(PolishExpr NE);
         long long calculate_area_and_axis(PolishExpr &NE);
         void assign_coordinate(int idx, Shape shape, int x, int y, PolishExpr &NE);
-        void build_shape_list_topdown(int& idx, PEType type, PolishExpr NE);
+        void build_shape_list_topdown(int& idx, PEType type, PolishExpr &NE);
         int get_subtree_size(int idx) const;
-        void build_subtree_size_table(PolishExpr NE);
+        void build_subtree_size_table(PolishExpr &NE);
         // constraint
         void get_floorplan_limit();
-        long long dead_space_cost();
         bool is_floorplan_within_limit();
         // Initialization 
         // -----initial_movement_data-----//
-        vector<int> initial_operands(PolishExpr old_E);
+        vector<int> initial_operands(PolishExpr &old_E);
         vector<pair<int, int>> initial_chain_operators(PolishExpr old_E);
         vector<pair<int, int>> initial_op_operands(PolishExpr old_E);
         vector<int> initial_num_operators_in_E(PolishExpr old_E);
