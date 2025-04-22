@@ -601,10 +601,26 @@ void Info::SA_algo(bool outline){
 
     
     while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= setting.eps){
+        //--------time check--------//
+        auto now = chrono::high_resolution_clock::now();
+        double elapsed = chrono::duration<double>(now - program_start).count();
+        if (elapsed > TIME_LIMIT) {
+            cout << "[Info] Exiting due to TIME_LIMIT\n";
+            break;
+        }
+        //--------time check--------//
         MT = 0;
         reject = 0;
         uphill = 0;
         while(uphill <= N && MT <= 2*N){
+            //--------time check--------//
+            auto now = chrono::high_resolution_clock::now();
+            double elapsed = chrono::duration<double>(now - program_start).count();
+            if (elapsed > TIME_LIMIT) {
+                cout << "[Info] Exiting due to TIME_LIMIT\n";
+                break;
+            }
+            //--------time check--------//
             PolishExpr NE = select_move(E);
             long long new_cost = calculate_cost(NE, outline);
             long long delta_c = new_cost - old_cost;

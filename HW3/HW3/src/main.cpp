@@ -8,7 +8,6 @@ using namespace std;
 int main(int argc, char *argv[]){
     // Input data
     Info info;
-    
     ifstream input = read_file(argv[1]);
     build_data_structure(info, input); // Init data info
     info.dead_space_ratio = stod(argv[3]);
