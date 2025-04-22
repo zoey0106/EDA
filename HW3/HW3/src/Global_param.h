@@ -8,5 +8,5 @@ using namespace std;
 #include "Global_param.h"
 extern mt19937 gen;
 extern chrono::high_resolution_clock::time_point program_start;
-extern constexpr double TIME_LIMIT = 530.0;
+extern constexpr double TIME_LIMIT = 590.0;
 #endif

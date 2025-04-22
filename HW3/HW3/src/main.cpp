@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
     // SA algo.
     info.get_floorplan_limit();
     info.initial_PolishExpr(); // Init sol.
-    
+    info.valid_E = info.E;
     cout << "[Valid floorplan finding....] \n";
     info.SA_algo(true); // Goal: find valid ANS.
     cout << "[Minimizing wiring length....] \n";

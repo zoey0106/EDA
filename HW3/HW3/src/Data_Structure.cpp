@@ -14,6 +14,7 @@
 #include <cassert>
 #include <numeric>
 #include <chrono>
+
 // Net
 Net::Net(string net_name, vector<string> pin_list){
     name = net_name;
@@ -164,6 +165,112 @@ void Info::init_expr(){
     E.expr = expr;
 }
 
+void Info::init_expr_move(){
+    vector<PEItem> expr;
+    cout << "w_h_limit " << w_h_limit << endl;
+    long long now_width = 0;
+    long long row_count = 0;
+    long long col_count = 0;
+    long long horizontal_count = 0;
+
+    // sort cell by height (optional)
+    vector<int> sorted(hard_block_list.size());
+    for (int i = 0; i < hard_block_list.size(); ++i) {
+        sorted[i] = i;
+    }
+
+    sort(sorted.begin(), sorted.end(), [&](int a, int b) {
+        return max(hard_block_list[a].height,hard_block_list[a].width) > max(hard_block_list[b].height,hard_block_list[b].width);
+    });
+    vector<bool> block_set(sorted.size(), false);
+    long long max_height_in_row = max(hard_block_list[sorted[0]].height, hard_block_list[sorted[0]].width);
+    for (int i = 0; i < sorted.size(); ++i) {
+        if (block_set[i] == true) continue; // Block being placed before
+
+        HardBlock &c = hard_block_list[sorted[i]];
+        if (c.width > c.height){
+            c.rotate = true; // 用比較大的那邊先排
+        }
+        now_width += c.rotate ? c.height: c.width;    
+        if (now_width > w_h_limit) {
+            row_count++;
+            if (row_count >= 2) {
+                expr.emplace_back(PEType::H);
+                horizontal_count++;
+                row_count = 1;
+            }
+            
+            now_width = c.rotate ? c.height: c.width;
+            col_count = 0;
+            max_height_in_row = c.rotate ? c.width: c.height;
+        }
+        
+        expr.emplace_back(PEType::Operand, &hard_block_list[sorted[i]]);
+        block_set[i] = true;
+
+        long long height_limit = max_height_in_row - (c.rotate ? c.width: c.height);
+        long long width_limit = c.rotate ? c.height: c.width;
+        long long current_width = 0; // 目前寬度，但不能大於width_limit
+        long long current_height = 0;
+
+        vector<vector<int>> fit_blocks;
+        bool done = true;
+    
+        while (done) {
+            bool find_block = false;
+            vector<int> row;
+            current_width = 0;
+            for (int j = i + 1; j < sorted.size(); j++) {
+                if (block_set[j]) continue;
+                HardBlock &fb = hard_block_list[sorted[j]];
+                if (fb.width > fb.height){
+                    fb.rotate = true; // 用比較大的那邊先排
+                }
+                long long fb_h = fb.rotate ? fb.width : fb.height;
+                long long fb_w = fb.rotate ? fb.height: fb.width;
+                if (!find_block) {
+                    if (current_height + fb_h <= height_limit && current_width + fb_w <= width_limit) {
+                        find_block = true;
+                        row.push_back(j);
+                        current_height += fb_h;
+                        current_width += fb_w;
+                        block_set[j] = true;
+                    }
+                } else {
+                    if (current_width + fb_w <= width_limit) {
+                        row.push_back(j);
+                        current_width += fb_w;
+                        block_set[j] = true;
+                    }
+                }
+            }
+            done = find_block;
+            if (row.size() != 0)
+                fit_blocks.push_back(row);
+        }
+        for (auto &vec : fit_blocks) {
+            for (int j = 0; j < vec.size(); j++) {
+                expr.emplace_back(PEType::Operand, &hard_block_list[sorted[vec[j]]]);
+                if (j != 0) {
+                    expr.emplace_back(PEType::V);
+                }
+            }
+            expr.emplace_back(PEType::H);
+        }
+
+        col_count++;
+        if (col_count >= 2) {
+            expr.emplace_back(PEType::V);
+            col_count = 1;
+            horizontal_count++;
+        }
+    }
+    if (col_count != 0) {
+        expr.emplace_back(PEType::H);
+    }
+    E.expr = expr;
+}
+
 // void Info::initial_movement_data(){
 //     initial_operands(E);
 //     initial_chain_operators(E);
@@ -173,7 +280,7 @@ void Info::init_expr(){
 
 void Info::initial_PolishExpr(){
     /*initialize Expression E & data*/
-    init_expr();
+    init_expr_move();
     best_E = E.expr;
     valid_E = E;
 }
@@ -392,7 +499,7 @@ bool Info::is_floorplan_within_limit(){
 }
 
 // HPWL:can acclerate to not calculate every block
-long long Info::calculate_wiring_length(PolishExpr NE){
+long long Info::calculate_wiring_length(PolishExpr &NE){
     /*  NEED to execute func. [calculate_area_and_axis()] first
         Input: Polish expreesion NE
         Return: wiring length of NE    
@@ -442,7 +549,53 @@ long long Info::calculate_wiring_length(PolishExpr NE){
     return wiring_length;
 }
 
-long long Info::calculate_cost(PolishExpr NE, bool outline){
+// long long Info::calculate_wiring_length_parallel(PolishExpr &NE){
+//     /*  NEED to execute func. [calculate_area_and_axis()] first
+//         Execute cal. wiring length parallel.
+//         Input: Polish expreesion NE
+//         Return: wiring length of NE    
+//     */
+//     unordered_map<string, HardBlock*> block_map;
+//     for (auto& item : NE.expr) {
+//         if (item.type == PEType::Operand) {
+//             block_map[item.hard_block->name] = item.hard_block;
+//         }
+//     }
+
+//     atomic<long long> wiring_length = 0;
+
+//     for_each(execution::par_unseq, net_list.begin(), net_list.end(),
+//         [&](const Net& net) {
+//             if (net.pins.empty()) return;
+
+//             int min_x = INT_MAX, max_x = INT_MIN;
+//             int min_y = INT_MAX, max_y = INT_MIN;
+
+//             for (const auto& pin_name : net.pins){
+//                 int x = 0, y = 0;
+//                 if (pad_map.count(pin_name)) {
+//                     x = pad_map[pin_name]->x;
+//                     y = pad_map[pin_name]->y;
+//                 } else if (block_map.count(pin_name)) {
+//                     const auto& block = block_map[pin_name];
+//                     int w = block->rotate ? block->height : block->width;
+//                     int h = block->rotate ? block->width : block->height;
+//                     x = block->x + w / 2;
+//                     y = block->y + h / 2;
+//                 }
+//                 min_x = min(min_x, x);
+//                 max_x = max(max_x, x);
+//                 min_y = min(min_y, y);
+//                 max_y = max(max_y, y);
+//             }
+
+//             wiring_length += (max_x - min_x) + (max_y - min_y);
+//         });
+
+//     return wiring_length.load();
+// }
+
+long long Info::calculate_cost(PolishExpr &NE, bool outline){
     long long min_area = calculate_area_and_axis(NE);
     long long wiring_length = calculate_wiring_length(NE);
     
@@ -575,6 +728,14 @@ PolishExpr Info::select_move(PolishExpr old_E){
         case 0: return M1_random(old_E);
         case 1: return M1_move(old_E);
     }
+    // vector<int> operands = initial_operands(old_E);
+    // uniform_int_distribution<int> dist(0, 2);
+    // int move_type = dist(gen);
+    // switch (move_type){
+    //     case 0: return M1_move(old_E);
+    //     case 1: return M2_move(old_E);
+    //     case 2: return M3_move(old_E);
+    // }
 }
 
 double Info::T_secheduling(double T, bool outline){

@@ -123,8 +123,9 @@ class Info{
         // T schedule
         double T_secheduling(double T, bool outline);
         // Cost
-        long long calculate_cost(PolishExpr NE, bool outline);
-        long long calculate_wiring_length(PolishExpr NE);
+        long long calculate_cost(PolishExpr &NE, bool outline);
+        long long calculate_wiring_length(PolishExpr &NE);
+        long long calculate_wiring_length_parallel(PolishExpr& NE);
         long long calculate_area_and_axis(PolishExpr &NE);
         void assign_coordinate(int idx, Shape shape, int x, int y, PolishExpr &NE);
         void build_shape_list_topdown(int& idx, PEType type, PolishExpr &NE);
@@ -142,6 +143,7 @@ class Info{
         // Init expr
         void initial_PolishExpr(); // Init E
         void init_expr();
+        void init_expr_move();
         // Checkerror
         void print_E();
 };
