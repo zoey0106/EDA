@@ -2,6 +2,8 @@
 #include <vector>
 #include <limits>
 #include <memory>
+#include <unordered_map>
+#include <cassert>
 
 /**
  * @brief A very simple segment tree for RMQ from TAs
@@ -20,7 +22,7 @@ class SegmentTree
     size_t n;
     std::vector<Node> seg;
 
-    T getVal(size_t id)
+    T getVal(size_t id) const
     {
         return (seg[id].hasTag) ? seg[id].tag : seg[id].data;
     }
@@ -84,12 +86,12 @@ public:
 
     T query(size_t ql, size_t qr)
     {
-        return query(ql, qr, 0LL, n - 1);
+        return query(ql, qr, 0ULL, n - 1);
     }
 
     void update(size_t ql, size_t qr, T val)
     {
-        update(val, ql, qr, 0LL, n - 1);
+        update(val, ql, qr, 0ULL, n - 1);
     }
 };
 
@@ -126,58 +128,80 @@ struct Node
 template <typename T>
 class BStarTree
 {
+    std::unordered_map<Node<T> *, int64_t> toInorderIdx;
     SegmentTree<T> contourH;
 
-    std::pair<T, T> getWidthHeight(Node<T> *root)
+    Node<T> *buildTree(const std::vector<Node<T> *> &preorder, const std::vector<Node<T> *> &inorder, size_t &i, int64_t l, int64_t r)
     {
-        if (!root)
+        if (l > r || i >= preorder.size())
+            return nullptr;
+
+        Node<T> *node = preorder[i++];
+        assert(toInorderIdx.count(node) > 0 && "Node not found in inorder map.");
+        int64_t idx = toInorderIdx[node];
+        node->lchild = buildTree(preorder, inorder, i, l, idx - 1);
+        node->rchild = buildTree(preorder, inorder, i, idx + 1, r);
+        return node;
+    }
+
+    T getTotalWidth(Node<T> *node) const
+    {
+        if (!node)
+            return 0;
+
+        return node->width + getTotalWidth(node->lchild) + getTotalWidth(node->rchild);
+    }
+
+    void setPosition(Node<T> *node, T startX)
+    {
+        if (!node)
+            return;
+
+        T endX = startX + node->width;
+        T y = contourH.query(startX, endX - 1);
+        contourH.update(startX, endX - 1, y + node->height);
+        node->setPosition(startX, y);
+        setPosition(node->lchild, endX);
+        setPosition(node->rchild, startX);
+    }
+
+    std::pair<T, T> getWidthHeight(Node<T> *node) const
+    {
+        if (!node)
             return {0, 0};
 
-        auto [lMaxWidth, lMaxHeight] = getWidthHeight(root->lchild);
-        auto [rMaxWidth, rMaxHeight] = getWidthHeight(root->rchild);
-        T maxWidth = std::max(std::max(lMaxWidth, rMaxWidth), root->x + root->width);
-        T maxHeight = std::max(std::max(lMaxHeight, rMaxHeight), root->y + root->height);
+        auto [lMaxWidth, lMaxHeight] = getWidthHeight(node->lchild);
+        auto [rMaxWidth, rMaxHeight] = getWidthHeight(node->rchild);
+        T maxWidth = std::max(std::max(lMaxWidth, rMaxWidth), node->x + node->width);
+        T maxHeight = std::max(std::max(lMaxHeight, rMaxHeight), node->y + node->height);
         return {maxWidth, maxHeight};
     }
 
 public:
-    BStarTree() {}
+    Node<T> *root;
 
-    Node<T> *buildTree(const std::vector<Node<T> *> &admissible)
+    BStarTree() : root(nullptr) {}
+
+    void buildTree(const std::vector<Node<T> *> &preorder, const std::vector<Node<T> *> &inorder)
     {
-        if (admissible.empty())
-            return nullptr;
+        assert(preorder.size() == inorder.size() && "The size of preorder and inorder must be the same.");
+        int64_t n = inorder.size();
 
-        T sum = 0;
-        size_t n = admissible.size();
-        for (size_t i = 0; i < n; ++i)
-        {
-            size_t l = i * 2 + 1;
-            size_t r = i * 2 + 2;
-            admissible[i]->lchild = (l < n) ? admissible[l] : nullptr;
-            admissible[i]->rchild = (r < n) ? admissible[r] : nullptr;
-            sum += admissible[i]->width;
-        }
+        toInorderIdx.clear();
+        for (int64_t i = 0; i < n; ++i)
+            toInorderIdx[inorder[i]] = i;
 
-        contourH.init(sum);
-        return admissible[0];
+        size_t i = 0;
+        root = buildTree(preorder, inorder, i, 0LL, n - 1);
     }
 
-    void setPosition(Node<T> *root, T startX = 0)
+    void setPosition()
     {
-        if (!root)
-            return;
-
-        T endX = startX + root->width;
-        T y = contourH.query(startX, endX - 1);
-        contourH.update(startX, endX - 1, y + root->height);
-        root->x = startX;
-        root->y = y;
-        setPosition(root->lchild, endX);
-        setPosition(root->rchild, startX);
+        contourH.init(getTotalWidth(root));
+        setPosition(root, 0);
     }
 
-    T getArea(Node<T> *root)
+    T getArea() const
     {
         auto [width, height] = getWidthHeight(root);
         return width * height;

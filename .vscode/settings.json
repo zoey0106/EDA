@@ -73,6 +73,8 @@
         "xstddef": "cpp",
         "xtr1common": "cpp",
         "random": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "execution": "cpp",
+        "queue": "cpp"
     }
 }
