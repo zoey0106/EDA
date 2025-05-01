@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-Wall -std=c++17 -O0 -g
 INCLUDES=
-HEADERS=$(wildcard *.h)
+HEADERS=$(wildcard *.hpp)
 LFLAGS=
 LIBS=
 SOURCES=$(wildcard *.cpp)

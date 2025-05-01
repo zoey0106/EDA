@@ -4,22 +4,23 @@
 #include "Data_Loader.hpp"
 #include "BStarTree.hpp"
 #include "ASFBuilder.hpp"
-#include "Node.hpp"
+#include "HBStarTree.hpp"
 using namespace std;
 
 int main(int argc, char *argv[]){
     Info data;
     ifstream input = read_file(argv[1]);
     build_data_structure(data, input);
+    //Goal 1: make B*tree follow property 1(make it the right most branch)-> now skew
+    //Goal 2: make HB*tree
+    //Goal 3: SA. algo.
 
     /* Symmetry Group: Construct ASF-B*-tree*/
-    for (auto& g: data.sym_groups){
-        ASFIsland island = build_ASF_island(data.hard_blocks, g);
-        mirror_island(island, g);
-        for (auto& r: island.reps){
-            r.twin_block->is_sym = true;
-        }
+    vector<ASFIsland> island; // ASF-B*-tree for each group
+    for (auto& group: data.sym_groups){
+        island.push_back(build_ASF_BStar_Tree(data.hard_blocks, group));
     }
+
     /* Non-symmetry modules: Create module node*/
     // vector<Node<int64_t>*> non_sym;
     // for (auto& block: data.hard_blocks) {
