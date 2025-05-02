@@ -9,7 +9,7 @@ struct HardBlock {
     int64_t width;
     int64_t height;
     // B* tree
-    Node<int64_t>* ptr = nullptr;
+    Node<int64_t>* ptr = nullptr; // B* tree node
     bool rotate = false;
     bool is_sym = false;
 };

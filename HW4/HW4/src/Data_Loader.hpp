@@ -7,6 +7,6 @@ using namespace std;
 #include "DataTypes.hpp"
 ifstream read_file(string filename);
 void build_data_structure(Info &info, ifstream &input);
-void write_output(BStarTree<int64_t>& bst,Info& data, string filename);
+void write_output(Info& data, string filename);
 
 #endif

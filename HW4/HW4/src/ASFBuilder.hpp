@@ -4,16 +4,21 @@
 #include <iostream>
 #include "DataTypes.hpp"
 #include "BStarTree.hpp"
-/* Build Represent-B* tree */
+/**
+ *  Build Represent-B* tree 
+ *  Self-symmetric will have both Represent&Block node
+ *  Pair-symmetric's block node = Represent node
+ * */
 // Representative for each block in the sym. group
 struct Represent {
     Node<int64_t>* rep_node; //B* node
-    HardBlock* twin_block; //pick represent block
+    HardBlock* right_block; //pick represent block
+    HardBlock* left_block; // unpicked block
     bool is_self = false;//self or pair
 };
 
 inline vector<Represent> select_represent(vector<HardBlock>& blocks, SymGroup& group){
-    /*
+    /*  
         input : one group
         return: picked representative for ASF-B* tree to build
     */
@@ -23,10 +28,12 @@ inline vector<Represent> select_represent(vector<HardBlock>& blocks, SymGroup& g
     vector<Represent> reps;
     // pair: (s1, s1') -> pick s1'
     for (auto& pair: group.pairs){
-        HardBlock* block = hard_block[pair.id_2];
+        HardBlock* block_id1 = hard_block[pair.id_1];
+        HardBlock* block_id2 = hard_block[pair.id_2];
         auto* node = new Node<int64_t>;
-        node->setShape(block->width, block->height);
-        reps.push_back({node, block, false});
+        node->setShape(block_id2->width, block_id2->height);
+        reps.push_back({node, block_id2, block_id1, false});
+        block_id2->ptr = node;
     }
     // self: (s1) -> pick s1 and make its w/2 (h/2) if V (H)
     for (auto& self: group.selfs){
@@ -37,7 +44,7 @@ inline vector<Represent> select_represent(vector<HardBlock>& blocks, SymGroup& g
         }else if (group.type == SymType::H){
             node->setShape(block->width, block->height/2);
         }else cout << "ERROR in self in _select_represent_\n";
-        reps.push_back({node, block, true});
+        reps.push_back({node, block, block, true});
     }
     return reps;
 }
@@ -90,7 +97,7 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
     ASFIsland island{reps, {}, 0};
 
     island.tree.buildTree(pre, in);
-    island.tree.setPosition();
+    island.tree.setPosition(); //also keep contour 
 
     if (group.type == SymType::V){
         int64_t minX = numeric_limits<int64_t>::max();
@@ -104,4 +111,54 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
     }
 
     return island;
+}
+
+inline void mirror_island(ASFIsland &island, SymGroup &group){
+    /**
+     * 1. Give island temporary coordinates 
+     * 2. Create node for twin_blocks & self-sym block 
+     * 3. Shift the x(y) to positive by adding max_x(max_y) of blocks if V(H)
+     *  **I Do not mantain axis after cal. coordinate**
+     * 4. Set is_sim = true
+     * Accerlerate advice: less set_position
+     */
+    int64_t axis = island.axis;
+    bool is_v = (group.type == SymType::V) ? true:false;
+    int64_t max = INT64_MIN; // max_x(max_y) of blocks
+
+    for (auto& rep: island.reps){
+        HardBlock* block_id1 = rep.left_block;
+        HardBlock* block_id2 = rep.right_block;
+        int64_t x = rep.rep_node->x;
+        int64_t y = rep.rep_node->y;
+        int64_t tmp_max = is_v ? x + block_id2->width : y + block_id2->height;
+        max = (tmp_max > max) ? tmp_max : max; 
+        auto* node = new Node<int64_t>;
+        node->setShape(block_id2->width, block_id2->height);
+        if (!rep.is_self){ // pair
+            // for twin block
+            is_v ? node->setPosition(axis*2 - x - block_id2->width, y):node->setPosition(x, axis*2 - y - block_id2->height);
+        }else if (rep.is_self){ // self
+            (!is_v) ? node->setPosition(axis - block_id2->width/2, y): node->setPosition(x, axis - block_id2->height/2);
+        }
+        block_id1->ptr = node;
+    }
+    // Shift coordinate to positive
+    for (auto& rep: island.reps){
+        HardBlock* block_id1 = rep.left_block;
+        HardBlock* block_id2 = rep.right_block;
+        Node<int64_t>* node_id1 = block_id1->ptr;
+        Node<int64_t>* node_id2 = block_id2->ptr;
+
+        if (is_v){
+            block_id1->ptr->setPosition(node_id1->x + max, node_id1->y);
+            block_id2->ptr->setPosition(node_id2->x + max, node_id2->y);
+        }
+        else if (!is_v){
+            block_id1->ptr->setPosition(node_id1->x, node_id1->y + max);
+            block_id2->ptr->setPosition(node_id2->x, node_id2->y + max);
+        }
+        block_id1->is_sym = true;
+        block_id2->is_sym = true;
+    }
 }

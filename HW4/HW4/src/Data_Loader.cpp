@@ -114,7 +114,7 @@ ifstream read_file(string filename){
     return input;
 }
 
-void write_output(BStarTree<int64_t>& bst,Info& data, string filename){
+void write_output(Info& data, string filename){
     /*
     Func: Write PATH "../output/filename"
     Input: string filename 
@@ -129,7 +129,16 @@ void write_output(BStarTree<int64_t>& bst,Info& data, string filename){
         exit(1);
     }
 
-    fout << "Area " << bst.getArea() << "\n";
+    // fout << "Area " << bst.getArea() << "\n";
+    int64_t maxX = 0, maxY = 0;
+    for (const auto& hb : data.hard_blocks) {
+        maxX = std::max(maxX, hb.ptr->x + hb.width);
+        maxY = std::max(maxY, hb.ptr->y + hb.height);
+    }
+
+    int64_t totalArea = maxX * maxY;
+    fout << "Area " << totalArea << '\n';
+
     fout << "NumHardBlocks " << data.hard_blocks.size() << "\n";
     for (auto& block: data.hard_blocks){
         fout << block.name << " "
