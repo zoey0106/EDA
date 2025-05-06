@@ -126,10 +126,15 @@ struct Node
  * @brief A B*-tree to calculate the coordinates of nodes and the area of placement
  */
 template <typename T>
+struct contour_segment { T x1, x2, y; };
+
+template <typename T>
 class BStarTree
 {
     std::unordered_map<Node<T> *, int64_t> toInorderIdx;
     SegmentTree<T> contourH;
+    std::vector<contour_segment<T>> top_contour;
+    std::vector<contour_segment<T>> bottom_contour;
 
     Node<T> *buildTree(const std::vector<Node<T> *> &preorder, const std::vector<Node<T> *> &inorder, size_t &i, int64_t l, int64_t r)
     {
@@ -152,7 +157,8 @@ class BStarTree
         return node->width + getTotalWidth(node->lchild) + getTotalWidth(node->rchild);
     }
 
-    void setPosition(Node<T> *node, T startX)
+    void setPosition(Node<T> *node, T startX, std::vector<contour_segment<T>>* tops,
+        std::vector<contour_segment<T>>* bottoms)
     {
         if (!node)
             return;
@@ -160,9 +166,11 @@ class BStarTree
         T endX = startX + node->width;
         T y = contourH.query(startX, endX - 1);
         contourH.update(startX, endX - 1, y + node->height);
+        if (tops) tops->push_back({startX, endX, y + node->height}); 
+        if (bottoms) bottoms->push_back({startX, endX, y}); 
         node->setPosition(startX, y);
-        setPosition(node->lchild, endX);
-        setPosition(node->rchild, startX);
+        setPosition(node->lchild, endX, tops, bottoms);
+        setPosition(node->rchild, startX, tops, bottoms);
     }
 
     std::pair<T, T> getWidthHeight(Node<T> *node) const
@@ -175,6 +183,61 @@ class BStarTree
         T maxWidth = std::max(std::max(lMaxWidth, rMaxWidth), node->x + node->width);
         T maxHeight = std::max(std::max(lMaxHeight, rMaxHeight), node->y + node->height);
         return {maxWidth, maxHeight};
+    }
+
+    void _buildContours_(bool is_v){
+        // top contour
+        if (top_contour.empty()) return;
+
+        sort(top_contour.begin(), top_contour.end(),[](auto&a,auto&b){ return a.x1 < b.x1; });
+
+        std::vector<contour_segment<T>> top;
+        contour_segment<T> new_seg = top_contour[0];
+        
+        for (auto& seg: top_contour){
+
+            if (seg.x1 == new_seg.x1 && seg.y > new_seg.y){
+                new_seg.x2 = seg.x2;
+                new_seg.y = seg.y;
+            }
+            else if (seg.x1 != new_seg.x1 && seg.y != new_seg.y){
+                top.push_back(new_seg);
+                new_seg.x1 = new_seg.x2;
+                new_seg.x2 = seg.x2;
+                new_seg.y = seg.y;
+            }
+            else if (seg.x1 != new_seg.x1 && seg.y == new_seg.y){
+                new_seg.x2 = seg.x2;
+            }
+        }
+        top.push_back(new_seg);
+        top_contour = std::move(top);
+
+        // build down contour if V
+        if (is_v && !bottom_contour.empty()){
+            sort(bottom_contour.begin(), bottom_contour.end(),[&](auto&a,auto&b){ return a.x1 < b.x1; });
+
+            std::vector<contour_segment<T>> bottom;
+            new_seg = bottom_contour[0];
+
+            for (auto& seg: bottom_contour){
+                if (seg.x1 == new_seg.x1 && seg.y < new_seg.y){
+                    new_seg.x2 = seg.x2;
+                    new_seg.y = seg.y;
+                }
+                else if (seg.x1 != new_seg.x1 && seg.y != new_seg.y){
+                    bottom.push_back(new_seg);
+                    new_seg.x1 = new_seg.x2;
+                    new_seg.x2 = seg.x2;
+                    new_seg.y = seg.y;
+                }
+                else if (seg.x1 != new_seg.x1 && seg.y == new_seg.y){
+                    new_seg.x2 = seg.x2;
+                }
+            }
+            bottom.push_back(new_seg);
+            bottom_contour = std::move(bottom);
+        }
     }
 
 public:
@@ -198,7 +261,9 @@ public:
     void setPosition()
     {
         contourH.init(getTotalWidth(root));
-        setPosition(root, 0);
+        top_contour.clear();
+        bottom_contour.clear();
+        setPosition(root, 0, &top_contour, &bottom_contour);
     }
 
     T getArea() const
@@ -206,4 +271,11 @@ public:
         auto [width, height] = getWidthHeight(root);
         return width * height;
     }
+
+    void buildContours(bool is_v){
+        _buildContours_(is_v);
+    }
+
+    std::vector<contour_segment<T>>& getTopContour() {return top_contour;}
+    std::vector<contour_segment<T>>& getBottomContour() {return bottom_contour;}
 };

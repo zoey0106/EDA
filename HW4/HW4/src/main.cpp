@@ -12,8 +12,8 @@ int main(int argc, char *argv[]){
     ifstream input = read_file(argv[1]);
     build_data_structure(data, input);
     //Goal 1: make B*tree follow property 1(make it the right most branch)-> now skew
-    //Goal **: down contour !
-    //Goal 2: make HB*tree
+    //Goal **: down contour ! (?)
+    //Goal 2: make HB*tree 
     //Goal 3: SA. algo.
 
     /* Symmetry Group: Construct ASF-B*-tree*/

@@ -89,6 +89,7 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
     /* 
         Input: a group
         Return: ASF-B*-tree for the group 
+        Build contour half (top & bottom) for V and full top for H
     */
     vector<Represent> reps = select_represent(blocks, group);
     vector<Node<int64_t>*> pre, in;
@@ -103,11 +104,13 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
         int64_t minX = numeric_limits<int64_t>::max();
         for (auto& r: reps) minX = min(minX, r.rep_node->x);
         island.axis = minX;
+        island.tree.buildContours(1);// half top & bottom
     }
     else if (group.type == SymType::H){
         int64_t minY = numeric_limits<int64_t>::max();
         for (auto& r: reps) minY = min(minY, r.rep_node->y);
         island.axis = minY;
+        island.tree.buildContours(0); // full top
     }
 
     return island;
