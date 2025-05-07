@@ -80,3 +80,81 @@ inline NodeBase<T>* build_regular_node(HardBlock& blocks){
     
     return node;
 }
+
+
+/**
+ * @brief A HB*-tree to calculate the coordinates of nodes and the area of the placement
+ */
+template <typename T>
+class HBStarTree
+{   
+    std::unordered_map<NodeBase<T> *, int64_t> toInorderIdx;
+    SegmentTree<T> contourH;
+
+    /* Builld tree */
+    NodeBase<T> *buildTree(const std::vector<NodeBase<T> *> &preorder, const std::vector<NodeBase<T> *> &inorder, size_t &i, int64_t l, int64_t r){
+        if (l > r || i >= preorder.size())
+            return nullptr;
+        NodeBase<T> *node = preorder[i++];
+        assert(toInorderIdx.count(node) > 0 && "Node not found in inorder map.");
+        int64_t idx = toInorderIdx[node];
+        node->lchild = buildTree(preorder, inorder, i, l, idx - 1);
+        while(node->rchild) node = node->rchild;
+        node->rchild = buildTree(preorder, inorder, i, idx + 1, r);
+        return node;
+    }
+
+    T getTotalWidth(Node<T> *node) const
+    {
+        if (!node)
+            return 0;
+
+        return node->width + getTotalWidth(node->lchild) + getTotalWidth(node->rchild);
+    }
+
+    /* Packing (get area) */
+    void setPosition(NodeBase<T> *node, T startX){
+        if (!node) return;
+
+        if (node->kind == NodeBase::Kind::Regular){
+            T endX = startX + node->width;
+            T y = contourH.query(startX, endX - 1);
+            contourH.update(startX, endX - 1, y + node->height);
+            node->setPosition(startX, y);
+            setPosition(node->lchild, endX);
+            setPosition(node->rchild, startX);
+        }
+        else if (node->kind == NodeBase::Kind::Hierarchy){
+            auto& bottom_contour = node->island->tree.bottom_contour;
+            for (auto& contour: bottom_contour){
+                
+            }
+
+        }
+        else if (node->kind == NodeBase::Kind::Contour){
+
+        }
+
+    }
+
+public:
+    NodeBase<T> *root;
+    HBStarTree() : root(nullptr) {}
+    /* Builld tree */
+    void buildTree(const std::vector<NodeBase<T> *> &preorder, const std::vector<NodeBase<T> *> &inorder) {
+        assert(preorder.size() == inorder.size() && "The size of preorder and inorder must be the same.");
+        int64_t n = inorder.size();
+
+        toInorderIdx.clear();
+        for (int64_t i = 0; i < n; ++i)
+            toInorderIdx[inorder[i]] = i;
+
+        size_t i = 0;
+        root = buildTree(preorder, inorder, i, 0LL, n - 1);
+    }
+    /* Packing (get area) */
+    void setPosition(){
+        contourH.init(getTotalWidth(root));
+        setPosition(root, 0);
+    }
+};

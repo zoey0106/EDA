@@ -18,7 +18,6 @@ class SegmentTree
     {
         T data, tag;
         bool hasTag;
-
         Node() : data(0), tag(0), hasTag(false) {}
     };
 
@@ -133,7 +132,8 @@ template <typename T>
 class BStarTree
 {
     std::unordered_map<Node<T> *, int64_t> toInorderIdx;
-    SegmentTree<T> contourH;
+    SegmentTree<T> contourH; 
+
     std::vector<contour_segment<T>> top_contour;
     std::vector<contour_segment<T>> bottom_contour;
 
@@ -314,8 +314,6 @@ public:
     void setPosition()
     {
         contourH.init(getTotalWidth(root));
-        top_contour.clear();
-        bottom_contour.clear();
         setPosition(root, 0);
     }
 
