@@ -12,34 +12,31 @@ int main(int argc, char *argv[]){
     ifstream input = read_file(argv[1]);
     build_data_structure(data, input);
     //Goal 1: make B*tree follow property 1(make it the right most branch)-> now skew
-    //Goal **: down contour ! (?)
     //Goal 2: make HB*tree 
     //Goal 3: SA. algo.
 
     /* Symmetry Group: Construct ASF-B*-tree*/
     vector<ASFIsland> island; // ASF-B*-tree for each group
+    vector<NodeBase<int64_t>*> HB_tree;
+
     for (auto& group: data.sym_groups){
-        island.push_back(build_ASF_BStar_Tree(data.hard_blocks, group));
-        mirror_island(island.back(), group);
+        island.push_back(build_ASF_BStar_Tree(data.hard_blocks, group)); 
+        mirror_island(island.back(), group);// contour
     }
-    
-    /* Non-symmetry modules: Create module node*/
-    //temp
-    for (auto& block: data.hard_blocks) {
-        if (!block.is_sym) {
-            auto* node = new Node<int64_t>;
-            node->setShape(block.width, block.height);
-            node->setPosition(0, 7316);
-            block.ptr = node;
-        }
+    /* Create Hierarchy node + contour node chain */
+    for (auto& isl: island){
+        HB_tree.push_back(build_heirarchy_contour_node<int64_t>(isl));
     }
-    // vector<Node<int64_t>*> pre, in;
-    // make_left_skew_seq(non_sym, pre, in);
-    // BStarTree<int64_t> bst;
-    // bst.buildTree(pre, in);
-    // bst.setPosition();
-
-    write_output(data, argv[2]);
-
+   
+    /* Create Regular node */
+    for (auto& block: data.hard_blocks){
+        if (!block.is_sym) HB_tree.push_back(build_regular_node<int64_t>(block));
+    }
+    for (auto& node: HB_tree){
+        if (node != nullptr) node->print_kind();
+        if (node->rchild != nullptr) node->rchild->print_kind();
+        if (node->lchild != nullptr) node->lchild->print_kind();
+    }
+    // write_output(data, argv[2]);
     return 0;
 }

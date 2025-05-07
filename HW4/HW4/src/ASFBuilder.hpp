@@ -89,7 +89,6 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
     /* 
         Input: a group
         Return: ASF-B*-tree for the group 
-        Build contour half (top & bottom) for V and full top for H
     */
     vector<Represent> reps = select_represent(blocks, group);
     vector<Node<int64_t>*> pre, in;
@@ -104,13 +103,11 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
         int64_t minX = numeric_limits<int64_t>::max();
         for (auto& r: reps) minX = min(minX, r.rep_node->x);
         island.axis = minX;
-        island.tree.buildContours(1);// half top & bottom
     }
     else if (group.type == SymType::H){
         int64_t minY = numeric_limits<int64_t>::max();
         for (auto& r: reps) minY = min(minY, r.rep_node->y);
         island.axis = minY;
-        island.tree.buildContours(0); // full top
     }
 
     return island;
@@ -123,6 +120,7 @@ inline void mirror_island(ASFIsland &island, SymGroup &group){
      * 3. Shift the x(y) to positive by adding max_x(max_y) of blocks if V(H)
      *  **I Do not mantain axis after cal. coordinate**
      * 4. Set is_sim = true
+     * 5. ~set contour~
      * Accerlerate advice: less set_position
      */
     int64_t axis = island.axis;
@@ -164,4 +162,9 @@ inline void mirror_island(ASFIsland &island, SymGroup &group){
         block_id1->is_sym = true;
         block_id2->is_sym = true;
     }
+    // build_contour before mirror
+    island.tree.buildContours(is_v);
+
+    // build_full_contour
+    island.tree.mirrorContours(is_v, max);
 }

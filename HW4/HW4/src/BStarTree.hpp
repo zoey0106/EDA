@@ -9,6 +9,9 @@
  * @brief A very simple segment tree for RMQ from TAs
  */
 template <typename T>
+struct contour_segment { T x1, x2, y; };
+
+template <typename T>
 class SegmentTree
 {
     struct Node
@@ -125,8 +128,6 @@ struct Node
 /**
  * @brief A B*-tree to calculate the coordinates of nodes and the area of placement
  */
-template <typename T>
-struct contour_segment { T x1, x2, y; };
 
 template <typename T>
 class BStarTree
@@ -135,6 +136,14 @@ class BStarTree
     SegmentTree<T> contourH;
     std::vector<contour_segment<T>> top_contour;
     std::vector<contour_segment<T>> bottom_contour;
+
+    template <typename F>
+    void traverse(Node<T>* node, F&& f) {
+        if (!node) return;
+        f(node);
+        traverse(node->lchild, std::forward<F>(f));
+        traverse(node->rchild, std::forward<F>(f));
+    }
 
     Node<T> *buildTree(const std::vector<Node<T> *> &preorder, const std::vector<Node<T> *> &inorder, size_t &i, int64_t l, int64_t r)
     {
@@ -157,8 +166,7 @@ class BStarTree
         return node->width + getTotalWidth(node->lchild) + getTotalWidth(node->rchild);
     }
 
-    void setPosition(Node<T> *node, T startX, std::vector<contour_segment<T>>* tops,
-        std::vector<contour_segment<T>>* bottoms)
+    void setPosition(Node<T> *node, T startX)
     {
         if (!node)
             return;
@@ -166,11 +174,9 @@ class BStarTree
         T endX = startX + node->width;
         T y = contourH.query(startX, endX - 1);
         contourH.update(startX, endX - 1, y + node->height);
-        if (tops) tops->push_back({startX, endX, y + node->height}); 
-        if (bottoms) bottoms->push_back({startX, endX, y}); 
         node->setPosition(startX, y);
-        setPosition(node->lchild, endX, tops, bottoms);
-        setPosition(node->rchild, startX, tops, bottoms);
+        setPosition(node->lchild, endX);
+        setPosition(node->rchild, startX);
     }
 
     std::pair<T, T> getWidthHeight(Node<T> *node) const
@@ -214,7 +220,8 @@ class BStarTree
         top_contour = std::move(top);
 
         // build down contour if V
-        if (is_v && !bottom_contour.empty()){
+        if (bottom_contour.empty()) return;
+        if (is_v){
             sort(bottom_contour.begin(), bottom_contour.end(),[&](auto&a,auto&b){ return a.x1 < b.x1; });
 
             std::vector<contour_segment<T>> bottom;
@@ -237,6 +244,52 @@ class BStarTree
             }
             bottom.push_back(new_seg);
             bottom_contour = std::move(bottom);
+        }
+    }
+
+    void _mirrorContours_(bool is_v, T axis){
+        if (is_v){
+            // complete left top contour
+            std::vector<contour_segment<T>> new_top_contour;
+            for (auto& contour: top_contour){
+                T width = contour.x2 - contour.x1;
+                T gap = contour.x1 - axis;
+                if (gap == 0){
+                    contour.x1 -= width;
+                }
+                else{
+                    T x2 = contour.x1 - 2*gap;
+                    T x1 = x2 - width;
+                    new_top_contour.push_back({x1, x2, contour.y});
+                }
+            } 
+            top_contour.insert(top_contour.end(), new_top_contour.begin(), new_top_contour.end());
+            // complete down contour
+
+            std::vector<contour_segment<T>> new_bottom_contour;
+            for (auto& contour: bottom_contour){
+                T width = contour.x2 - contour.x1;
+                T gap = contour.x1 - axis;
+                if (gap == 0){
+                    contour.x1 -= width;
+                }
+                else{
+                    T x2 = contour.x1 - 2*gap;
+                    T x1 = x2 - width;
+                    new_bottom_contour.push_back({x1, x2, contour.y});
+                }
+            } 
+            bottom_contour.insert(bottom_contour.end(), new_bottom_contour.begin(), new_bottom_contour.end());
+
+        }
+
+        if (!is_v){
+            // complete down contour
+            bottom_contour.clear();
+            for (auto& contour: top_contour){
+                T y = 2*axis - contour.y;
+                bottom_contour.push_back({contour.x1, contour.x2, y});
+            }
         }
     }
 
@@ -263,7 +316,7 @@ public:
         contourH.init(getTotalWidth(root));
         top_contour.clear();
         bottom_contour.clear();
-        setPosition(root, 0, &top_contour, &bottom_contour);
+        setPosition(root, 0);
     }
 
     T getArea() const
@@ -273,7 +326,18 @@ public:
     }
 
     void buildContours(bool is_v){
+        top_contour.clear();
+        bottom_contour.clear();
+
+        traverse(root, [&](Node<T>* n) {
+            top_contour.push_back({n->x, n->x + n->width, n->y + n->height});
+            bottom_contour.push_back({n->x, n->x + n->width, n->y});
+        });
         _buildContours_(is_v);
+    }
+
+    void mirrorContours(bool is_v, T axis){
+        _mirrorContours_(is_v, axis);
     }
 
     std::vector<contour_segment<T>>& getTopContour() {return top_contour;}
