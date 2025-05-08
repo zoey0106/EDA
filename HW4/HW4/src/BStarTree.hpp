@@ -127,6 +127,12 @@ struct Node
         x_abs = x + shift_x;
         y_abs = y + shift_y;
     }
+
+    void setAbsPosition_noShift(T x_, T y_) 
+    {
+        x_abs = x_;
+        y_abs = y_;
+    }
 };
 
 /**

@@ -140,7 +140,8 @@ inline void mirror_island(ASFIsland &island, SymGroup &group){
             // for twin block
             is_v ? node->setPosition(axis*2 - x - block_id2->width, y):node->setPosition(x, axis*2 - y - block_id2->height);
         }else if (rep.is_self){ // self
-            (!is_v) ? node->setPosition(axis - block_id2->width/2, y): node->setPosition(x, axis - block_id2->height/2);
+            //超容易錯 乾
+            is_v ? node->setPosition(-block_id2->width/2 , y): node->setPosition(x, -block_id2->height/2);
         }
         block_id1->ptr = node;
     }
@@ -153,11 +154,11 @@ inline void mirror_island(ASFIsland &island, SymGroup &group){
 
         if (is_v){
             block_id1->ptr->setPosition(node_id1->x + max, node_id1->y);
-            block_id2->ptr->setPosition(node_id2->x + max, node_id2->y);
+            if (!rep.is_self) block_id2->ptr->setPosition(node_id2->x + max, node_id2->y);
         }
         else if (!is_v){
             block_id1->ptr->setPosition(node_id1->x, node_id1->y + max);
-            block_id2->ptr->setPosition(node_id2->x, node_id2->y + max);
+            if (!rep.is_self) block_id2->ptr->setPosition(node_id2->x, node_id2->y + max);
         }
         block_id1->is_sym = true;
         block_id2->is_sym = true;

@@ -157,6 +157,8 @@ class HBStarTree
             T max_x = 0;
             for (auto& rep: node->island->reps){
                 rep.rep_node->setAbsPosition(startX, max_y_add);
+                if (rep.is_self) rep.right_block->ptr->setAbsPosition(startX, max_y_add);;
+
                 T lx = rep.rep_node->x_abs;
                 T rx = lx + rep.right_block->width;
                 T ty = rep.rep_node->y_abs + rep.right_block->height;
@@ -165,7 +167,6 @@ class HBStarTree
                 max_x = std::max(rx, max_x);
                 // non self-sym
                 if (!rep.is_self){
-                    std::cout<<rep.left_block->name<<"  "; //delete
                     rep.left_block->ptr->setAbsPosition(startX, max_y_add);
                     lx = rep.left_block->ptr->x_abs;
                     rx = lx + rep.left_block->ptr->width;
