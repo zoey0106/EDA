@@ -33,11 +33,11 @@ int main(int argc, char *argv[]){
     // trivial squence
     vector<NodeBase<int64_t>*> pre = HB_node;
     vector<NodeBase<int64_t>*> in  = HB_node;
-
+    
     HBStarTree<int64_t> HB_tree;
     HB_tree.buildTree(pre, in);
     HB_tree.setPosition();
 
-    // write_output(data, argv[2]);
+    write_output(data, argv[2]);
     return 0;
 }

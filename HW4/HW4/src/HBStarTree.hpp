@@ -23,15 +23,17 @@ struct NodeBase{
     T width, height;
     Kind kind;
     ASFIsland *island; // Hierarchy node
+    Node<T> *reg_node; // Regular node
     NodeBase *lchild, *rchild;
 
-    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), lchild(nullptr), rchild(nullptr) {}
+    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), reg_node(nullptr), lchild(nullptr), rchild(nullptr) {}
 
     virtual ~NodeBase() = default;
 public: 
     void setIsland(ASFIsland &isl) {island = &isl;}
     void setShape(T W, T H) {width = W; height = H;}
     void setPos (T X, T Y) {x = X; y = Y;}
+    void setNode(Node<T> &n) {reg_node = &n;}
     void print_kind() {
         if (kind == Kind::Hierarchy) std::cout<< "Hierarchy node\n";
         if (kind == Kind::Regular) std::cout<< "Regular node\n";
@@ -49,6 +51,7 @@ inline NodeBase<T>* build_heirarchy_contour_node(ASFIsland& island){
     /* Build Hierarchy node*/
     auto* node = new NodeBase<T>(NodeBase<T>::Kind::Hierarchy);
     node->setIsland(island);
+    node->setShape(island.tree.returnTotalWidth(), 0);
 
     /* Build left-skew contour node chain*/
     auto& top_contour = island.tree.getTopContour();
@@ -77,7 +80,9 @@ inline NodeBase<T>* build_regular_node(HardBlock& blocks){
      */
     auto* node = new NodeBase<T>(NodeBase<T>::Kind::Regular);
     node->setShape(blocks.width, blocks.height); 
-    
+    auto* BStarNode = new Node<T>;
+    node->setNode(*BStarNode);
+    blocks.ptr = BStarNode;
     return node;
 }
 
@@ -89,7 +94,7 @@ template <typename T>
 class HBStarTree
 {   
     std::unordered_map<NodeBase<T> *, int64_t> toInorderIdx;
-    SegmentTree<T> contourH;
+    SegmentTree<T> contour_H;
 
     /* Builld tree */
     NodeBase<T> *buildTree(const std::vector<NodeBase<T> *> &preorder, const std::vector<NodeBase<T> *> &inorder, size_t &i, int64_t l, int64_t r){
@@ -98,13 +103,22 @@ class HBStarTree
         NodeBase<T> *node = preorder[i++];
         assert(toInorderIdx.count(node) > 0 && "Node not found in inorder map.");
         int64_t idx = toInorderIdx[node];
+        
+        
         node->lchild = buildTree(preorder, inorder, i, l, idx - 1);
-        while(node->rchild) node = node->rchild;
-        node->rchild = buildTree(preorder, inorder, i, idx + 1, r);
+        NodeBase<T>* rightSub = buildTree(preorder, inorder, i, idx + 1, r);
+
+        if (node->kind == NodeBase<T>::Kind::Hierarchy && node->rchild) {
+            NodeBase<T>* tail = node->rchild;
+            while (tail->rchild) tail = tail->rchild;
+            tail->rchild = rightSub;
+        } else {
+            node->rchild = rightSub;
+        }
         return node;
     }
 
-    T getTotalWidth(Node<T> *node) const
+    T getTotalWidth(NodeBase<T> *node) const
     {
         if (!node)
             return 0;
@@ -116,25 +130,59 @@ class HBStarTree
     void setPosition(NodeBase<T> *node, T startX){
         if (!node) return;
 
-        if (node->kind == NodeBase::Kind::Regular){
+        if (node->kind == NodeBase<T>::Kind::Regular|| node->kind == NodeBase<T>::Kind::Contour){
             T endX = startX + node->width;
-            T y = contourH.query(startX, endX - 1);
-            contourH.update(startX, endX - 1, y + node->height);
-            node->setPosition(startX, y);
+            T y = contour_H.query(startX, endX - 1); //7316
+            contour_H.update(startX, endX - 1, y + node->height);
+            node->setPos(startX, y);
+            if (node->kind == NodeBase<T>::Kind::Regular){
+                node->reg_node->x_abs = startX;
+                node->reg_node->y_abs = y;
+            }
             setPosition(node->lchild, endX);
             setPosition(node->rchild, startX);
         }
-        else if (node->kind == NodeBase::Kind::Hierarchy){
-            auto& bottom_contour = node->island->tree.bottom_contour;
-            for (auto& contour: bottom_contour){
-                
+        else if (node->kind == NodeBase<T>::Kind::Hierarchy){
+            auto& BottomContour = node->island->tree.getBottomContour();
+
+            T max_y_contour = std::numeric_limits<T>::min(); 
+            for (auto& contour: BottomContour){
+                if (contour.y > max_y_contour ) max_y_contour = contour.y;
             }
-
+            T max_y_add = std::numeric_limits<T>::min();
+            for (auto& contour: BottomContour){
+                T add_y = contour_H.query(startX + contour.x1, startX + contour.x2) + max_y_contour - contour.y;
+                if (add_y > max_y_add) max_y_add = add_y; 
+            }
+            T max_x = 0;
+            for (auto& rep: node->island->reps){
+                rep.rep_node->setAbsPosition(startX, max_y_add);
+                T lx = rep.rep_node->x_abs;
+                T rx = lx + rep.right_block->width;
+                T ty = rep.rep_node->y_abs + rep.right_block->height;
+                
+                contour_H.update(lx, rx - 1, ty);
+                max_x = std::max(rx, max_x);
+                // non self-sym
+                if (!rep.is_self){
+                    std::cout<<rep.left_block->name<<"  "; //delete
+                    rep.left_block->ptr->setAbsPosition(startX, max_y_add);
+                    lx = rep.left_block->ptr->x_abs;
+                    rx = lx + rep.left_block->ptr->width;
+                    ty = rep.left_block->ptr->y_abs + rep.left_block->ptr->height;
+                    contour_H.update(lx, rx - 1, ty);
+                    max_x = std::max(rx, max_x);
+                }
+            }
+            setPosition(node->lchild, max_x);
+            setPosition(node->rchild, startX); //  contour
         }
-        else if (node->kind == NodeBase::Kind::Contour){
-
-        }
-
+    }
+    void printTree(NodeBase<T> *n){
+        if (!n) return;
+        n->print_kind();
+        printTree(n->lchild);
+        printTree(n->rchild);
     }
 
 public:
@@ -154,7 +202,12 @@ public:
     }
     /* Packing (get area) */
     void setPosition(){
-        contourH.init(getTotalWidth(root));
+        contour_H.init(getTotalWidth(root));
         setPosition(root, 0);
+    }
+
+    /* Error checking */
+    void printTree(){
+        printTree(root);
     }
 };

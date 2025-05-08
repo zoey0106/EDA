@@ -97,7 +97,7 @@ inline ASFIsland build_ASF_BStar_Tree(vector<HardBlock>& blocks, SymGroup& group
     ASFIsland island{reps, {}, 0};
 
     island.tree.buildTree(pre, in);
-    island.tree.setPosition(); //also keep contour 
+    island.tree.setPosition(); 
 
     if (group.type == SymType::V){
         int64_t minX = numeric_limits<int64_t>::max();

@@ -4,13 +4,11 @@
 #include <memory>
 #include <unordered_map>
 #include <cassert>
-
+template <typename T>
+struct contour_segment{T x1, x2, y;};
 /**
  * @brief A very simple segment tree for RMQ from TAs
  */
-template <typename T>
-struct contour_segment { T x1, x2, y; };
-
 template <typename T>
 class SegmentTree
 {
@@ -18,6 +16,7 @@ class SegmentTree
     {
         T data, tag;
         bool hasTag;
+
         Node() : data(0), tag(0), hasTag(false) {}
     };
 
@@ -105,22 +104,28 @@ struct Node
 {
     using ptr = std::unique_ptr<Node>;
 
-    T x, y;
+    T x, y; // relative coor.
+    T x_abs, y_abs; // absolute coor.
     T width, height;
     Node *lchild, *rchild;
 
-    Node() : x(0), y(0), width(0), height(0), lchild(nullptr), rchild(nullptr) {}
-
-    void setPosition(T x_, T y_)
+    Node() : x(0), y(0), x_abs(0), y_abs(0), width(0), height(0), lchild(nullptr), rchild(nullptr) {}
+    
+    // set relative coor.
+    void setPosition(T x_, T y_) 
     {
         x = x_;
         y = y_;
     }
-
     void setShape(T width_, T height_)
     {
         width = width_;
         height = height_;
+    }
+    // set absolute coor.
+    void setAbsPosition(T shift_x, T shift_y){
+        x_abs = x + shift_x;
+        y_abs = y + shift_y;
     }
 };
 
@@ -309,6 +314,10 @@ public:
 
         size_t i = 0;
         root = buildTree(preorder, inorder, i, 0LL, n - 1);
+    }
+
+    T returnTotalWidth(){
+        return getTotalWidth(root);
     }
 
     void setPosition()

@@ -132,8 +132,8 @@ void write_output(Info& data, string filename){
     // fout << "Area " << bst.getArea() << "\n";
     int64_t maxX = 0, maxY = 0;
     for (const auto& hb : data.hard_blocks) {
-        maxX = std::max(maxX, hb.ptr->x + hb.width);
-        maxY = std::max(maxY, hb.ptr->y + hb.height);
+        maxX = std::max(maxX, hb.ptr->x_abs + hb.width);
+        maxY = std::max(maxY, hb.ptr->y_abs + hb.height);
     }
 
     int64_t totalArea = maxX * maxY;
@@ -142,8 +142,8 @@ void write_output(Info& data, string filename){
     fout << "NumHardBlocks " << data.hard_blocks.size() << "\n";
     for (auto& block: data.hard_blocks){
         fout << block.name << " "
-             << block.ptr->x << " "
-             << block.ptr->y << " "
+             << block.ptr->x_abs << " "
+             << block.ptr->y_abs << " "
              << block.rotate << "\n";
     }
 
