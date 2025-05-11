@@ -135,7 +135,7 @@ void write_output(Info& data, string filename){
         maxX = std::max(maxX, hb.ptr->x_abs + hb.width);
         maxY = std::max(maxY, hb.ptr->y_abs + hb.height);
     }
-
+    
     int64_t totalArea = maxX * maxY;
     fout << "Area " << totalArea << '\n';
 

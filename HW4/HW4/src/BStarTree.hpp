@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include <cassert>
+#include <unordered_map>
 template <typename T>
 struct contour_segment{T x1, x2, y;};
 /**
@@ -108,8 +109,9 @@ struct Node
     T x_abs, y_abs; // absolute coor.
     T width, height;
     Node *lchild, *rchild;
+    Node *parent;
 
-    Node() : x(0), y(0), x_abs(0), y_abs(0), width(0), height(0), lchild(nullptr), rchild(nullptr) {}
+    Node() : x(0), y(0), x_abs(0), y_abs(0), width(0), height(0), lchild(nullptr), rchild(nullptr), parent(nullptr) {}
     
     // set relative coor.
     void setPosition(T x_, T y_) 
@@ -165,7 +167,9 @@ class BStarTree
         assert(toInorderIdx.count(node) > 0 && "Node not found in inorder map.");
         int64_t idx = toInorderIdx[node];
         node->lchild = buildTree(preorder, inorder, i, l, idx - 1);
+        if (node->lchild) node->lchild->parent = node;
         node->rchild = buildTree(preorder, inorder, i, idx + 1, r);
+        if (node->rchild) node->rchild->parent = node;
         return node;
     }
 
@@ -233,27 +237,55 @@ class BStarTree
         // build down contour if V
         if (bottom_contour.empty()) return;
         if (is_v){
-            sort(bottom_contour.begin(), bottom_contour.end(),[&](auto&a,auto&b){ return a.x1 < b.x1; });
-
             std::vector<contour_segment<T>> bottom;
-            new_seg = bottom_contour[0];
+
+            struct index {T x; T y; T id;};
+            T id = 0;
+            std::vector<index> contour_end_idx;
+            std::unordered_map<T, T> toStartIdx;
 
             for (auto& seg: bottom_contour){
-                if (seg.x1 == new_seg.x1 && seg.y < new_seg.y){
-                    new_seg.x2 = seg.x2;
-                    new_seg.y = seg.y;
+                index e = {seg.x2, seg.y, id};
+                contour_end_idx.push_back(e);
+                toStartIdx[id] = seg.x1;
+                id++;
+            } 
+            
+            sort(contour_end_idx.begin(), contour_end_idx.end(),[&](auto&a,auto&b){ if (a.x == b.x) return a.y < b.y; return a.x < b.x; });
+
+            for (auto& idx: contour_end_idx){
+                if (bottom.size() == 0){
+                    bottom.push_back({toStartIdx[idx.id], idx.x, idx.y});
+                    continue;
                 }
-                else if (seg.x1 != new_seg.x1 && seg.y != new_seg.y){
-                    bottom.push_back(new_seg);
-                    new_seg.x1 = new_seg.x2;
-                    new_seg.x2 = seg.x2;
-                    new_seg.y = seg.y;
+                T x1 = toStartIdx[idx.id];
+                T x2 = idx.x;
+                T y = idx.y;
+                for (auto& c: bottom){
+                    bool c_low = (c.y < y);
+                    if (x1 > c.x2) continue; // no overlap 
+                    if (x1 == c.x2){ // no overlap 
+                        if (y == c.y){ // same y -> extend
+                            c.x2 = x2;
+                            x1 = x2;// means kill 
+                            break;
+                        }
+                       continue;
+                    }
+                    if (c_low){// 更新準備新加的segment
+                        if (c.x2 > x1) x1 = c.x2;
+                    } // 更新已經加入的segment -> if x1 >= x2 ->kill
+                    else if (!c_low){
+                        if (c.x1 >= x1) { // cover
+                            c.x1 = c.x2; // means kill
+                        }
+                    }
                 }
-                else if (seg.x1 != new_seg.x1 && seg.y == new_seg.y){
-                    new_seg.x2 = seg.x2;
-                }
+                bottom.erase(remove_if(bottom.begin(), bottom.end(),
+                [](const contour_segment<T>& s){ return s.x1 >= s.x2; }),
+                bottom.end());
+                if (x1 < x2) bottom.push_back({x1, x2, y});
             }
-            bottom.push_back(new_seg);
             bottom_contour = std::move(bottom);
         }
     }

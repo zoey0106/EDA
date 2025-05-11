@@ -1,0 +1,26 @@
+NumHardBlocks 18
+HardBlock cc_11 3146 1826
+HardBlock cc_12 3146 1826
+HardBlock cc_13 3146 1826
+HardBlock cc_14 3146 1826
+HardBlock cc_21 3186 1832
+HardBlock cc_22 3186 1832
+HardBlock cc_23 3186 1832
+HardBlock cc_24 3186 1832
+HardBlock clk 826 286
+HardBlock clkc 1036 462
+HardBlock clkd 378 700
+HardBlock cmp1 980 210
+HardBlock cmp2 980 210
+HardBlock cmp3 980 210
+HardBlock cntd 3304 546
+HardBlock cntu 3304 546
+HardBlock npd 2016 252
+HardBlock nps 3080 462
+
+NumSymGroups 1
+SymGroup sg0 4
+SymPair cc_11 cc_12
+SymPair cc_13 cc_14
+SymPair cc_21 cc_22
+SymPair cc_23 cc_24

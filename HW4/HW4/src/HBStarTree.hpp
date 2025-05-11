@@ -25,8 +25,9 @@ struct NodeBase{
     ASFIsland *island; // Hierarchy node
     Node<T> *reg_node; // Regular node
     NodeBase *lchild, *rchild;
+    NodeBase *parent;
 
-    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), reg_node(nullptr), lchild(nullptr), rchild(nullptr) {}
+    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), reg_node(nullptr), lchild(nullptr), rchild(nullptr), parent(nullptr) {}
 
     virtual ~NodeBase() = default;
 public: 
@@ -64,10 +65,14 @@ inline NodeBase<T>* build_heirarchy_contour_node(ASFIsland& island){
         contour_node->setShape(contour.x2 - contour.x1, 0); 
 
         if (!first_contour) first_contour = contour_node;
-        if (prev) prev->lchild = contour_node; 
+        if (prev) {
+            prev->lchild = contour_node; 
+            contour_node->parent = prev;
+        }
         prev = contour_node;
     }
     node->rchild = first_contour;
+    first_contour->parent = node;
     return node;
 }
 
@@ -106,14 +111,18 @@ class HBStarTree
         
         
         node->lchild = buildTree(preorder, inorder, i, l, idx - 1);
+        if (node->lchild) node->lchild->parent = node;
+        
         NodeBase<T>* rightSub = buildTree(preorder, inorder, i, idx + 1, r);
 
         if (node->kind == NodeBase<T>::Kind::Hierarchy && node->rchild) {
             NodeBase<T>* tail = node->rchild;
             while (tail->rchild) tail = tail->rchild;
             tail->rchild = rightSub;
+            if (rightSub) rightSub->parent = tail;
         } else {
             node->rchild = rightSub;
+            if (rightSub) rightSub->parent = node;
         }
         return node;
     }
@@ -144,20 +153,25 @@ class HBStarTree
         }
         else if (node->kind == NodeBase<T>::Kind::Hierarchy){
             auto& BottomContour = node->island->tree.getBottomContour();
-
             T max_y_contour = std::numeric_limits<T>::min(); 
             for (auto& contour: BottomContour){
                 if (contour.y > max_y_contour ) max_y_contour = contour.y;
             }
             T max_y_add = std::numeric_limits<T>::min();
+            T real_y = 0;
             for (auto& contour: BottomContour){
                 T add_y = contour_H.query(startX + contour.x1, startX + contour.x2) + max_y_contour - contour.y;
-                if (add_y > max_y_add) max_y_add = add_y; 
+                if (add_y > max_y_add) {
+                    max_y_add = add_y; 
+                    real_y = contour_H.query(startX + contour.x1, startX + contour.x2);
+                }
             }
+
             T max_x = 0;
             for (auto& rep: node->island->reps){
-                rep.rep_node->setAbsPosition(startX, max_y_add);
-                if (rep.is_self) rep.right_block->ptr->setAbsPosition(startX, max_y_add);;
+                rep.rep_node->setAbsPosition(startX, real_y);
+                // 靠邀阿 rep node != block_node if self-sym
+                if (rep.is_self) rep.right_block->ptr->setAbsPosition(startX, real_y);;
 
                 T lx = rep.rep_node->x_abs;
                 T rx = lx + rep.right_block->width;
@@ -167,7 +181,7 @@ class HBStarTree
                 max_x = std::max(rx, max_x);
                 // non self-sym
                 if (!rep.is_self){
-                    rep.left_block->ptr->setAbsPosition(startX, max_y_add);
+                    rep.left_block->ptr->setAbsPosition(startX, real_y);
                     lx = rep.left_block->ptr->x_abs;
                     rx = lx + rep.left_block->ptr->width;
                     ty = rep.left_block->ptr->y_abs + rep.left_block->ptr->height;
