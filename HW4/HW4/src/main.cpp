@@ -37,8 +37,8 @@ int main(int argc, char *argv[]){
     HB_tree.setPosition();
 
     // SA.algo
-    //SA_Setting setting;
-    //SA_algo(setting, data, HB_tree, HB_node);
+    SA_Setting setting;
+    SA_algo(setting, data, HB_tree, HB_node);
     
     write_output(data, argv[2]);
     return 0;
