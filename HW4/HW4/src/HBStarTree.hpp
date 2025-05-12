@@ -14,6 +14,7 @@
 /**
  * @brief The node structure of the HB*-tree
  */
+int64_t unique_id = 0;
 template <typename T>
 struct NodeBase{
     using ptr = unique_ptr<NodeBase>;
@@ -26,8 +27,11 @@ struct NodeBase{
     Node<T> *reg_node; // Regular node
     NodeBase *lchild, *rchild;
     NodeBase *parent;
+    int64_t id;
 
-    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), reg_node(nullptr), lchild(nullptr), rchild(nullptr), parent(nullptr) {}
+    NodeBase(Kind k) : x(0), y(0), width(0), height(0), kind(k), island(nullptr), reg_node(nullptr), lchild(nullptr), rchild(nullptr), parent(nullptr) {
+        id = unique_id++;
+    }
 
     virtual ~NodeBase() = default;
 public: 
@@ -88,6 +92,7 @@ inline NodeBase<T>* build_regular_node(HardBlock& blocks){
     auto* BStarNode = new Node<T>;
     node->setNode(*BStarNode);
     blocks.ptr = BStarNode;
+    blocks.ptr->setShape(blocks.width, blocks.height);
     return node;
 }
 

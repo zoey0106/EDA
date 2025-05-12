@@ -107,11 +107,12 @@ struct Node
 
     T x, y; // relative coor.
     T x_abs, y_abs; // absolute coor.
+    bool rotate; 
     T width, height;
     Node *lchild, *rchild;
     Node *parent;
 
-    Node() : x(0), y(0), x_abs(0), y_abs(0), width(0), height(0), lchild(nullptr), rchild(nullptr), parent(nullptr) {}
+    Node() : x(0), y(0), x_abs(0), y_abs(0), rotate(false), width(0), height(0), lchild(nullptr), rchild(nullptr), parent(nullptr) {}
     
     // set relative coor.
     void setPosition(T x_, T y_) 
@@ -220,7 +221,7 @@ class BStarTree
             id++;
         }
 
-        sort(contour_end_idx_top.begin(), contour_end_idx.end(),[&](auto&a,auto&b){ if (a.x == b.x) return a.y > b.y; return a.x < b.x; });
+        sort(contour_end_idx.begin(), contour_end_idx.end(),[&](auto&a,auto&b){ if (a.x == b.x) return a.y > b.y; return a.x < b.x; });
 
         for (auto& idx: contour_end_idx){
             if (top.size() == 0){

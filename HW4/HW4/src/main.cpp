@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
     vector<NodeBase<int64_t>*> HB_node;
     for (auto& group: data.sym_groups){
         island.push_back(build_ASF_BStar_Tree(data.hard_blocks, group)); 
-        mirror_island(island.back(), group);// contour
+        mirror_island(island.back());// contour
     }
     /* Create Hierarchy node + contour node chain */
     for (auto& isl: island){
@@ -35,10 +35,9 @@ int main(int argc, char *argv[]){
     HBStarTree<int64_t> HB_tree;
     HB_tree.buildTree(pre, in);
     HB_tree.setPosition();
-
     // SA.algo
-    // SA_Setting setting;
-    // SA_algo(setting, data, HB_tree, HB_node);
+    SA_Setting setting;
+    SA_algo(setting, data, HB_tree, HB_node);
     
     write_output(data, argv[2]);
     return 0;
