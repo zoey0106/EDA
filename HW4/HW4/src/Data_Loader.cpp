@@ -70,6 +70,9 @@ void build_data_structure(Info& data, ifstream& input){
             tokens = slice_line(line);
             data.hard_blocks.push_back(build_hard_blocks_data(input, tokens));
         }
+        for (int i = 0; i < hard_blocks_count; i++){
+            data.output.push_back({data.hard_blocks[i].name, 0, 0, false});
+        }
     };
     // Build symmetric group
     commandMap["NumSymGroups"] = [&](ifstream& input, vector<string>& tokens) {
@@ -130,21 +133,21 @@ void write_output(Info& data, string filename){
     }
 
     // fout << "Area " << bst.getArea() << "\n";
-    int64_t maxX = 0, maxY = 0;
-    for (const auto& hb : data.hard_blocks) {
-        maxX = std::max(maxX, hb.ptr->x_abs + hb.ptr->width);
-        maxY = std::max(maxY, hb.ptr->y_abs + hb.ptr->height);
-    }
+    // int64_t maxX = 0, maxY = 0;
+    // for (const auto& hb : data.hard_blocks) {
+    //     maxX = std::max(maxX, hb.ptr->x_abs + hb.ptr->width);
+    //     maxY = std::max(maxY, hb.ptr->y_abs + hb.ptr->height);
+    // }
     
-    int64_t totalArea = maxX * maxY;
-    fout << "Area " << totalArea << '\n';
+    // int64_t totalArea = maxX * maxY;
+    fout << "Area " << data.best_area << '\n';
 
-    fout << "NumHardBlocks " << data.hard_blocks.size() << "\n";
-    for (auto& block: data.hard_blocks){
-        fout << block.name << " "
-             << block.ptr->x_abs << " "
-             << block.ptr->y_abs << " "
-             << block.ptr->rotate << "\n";
+    fout << "NumHardBlocks " << data.output.size() << "\n";
+    for (auto& out: data.output){
+        fout << out.name << " "
+             << out.x << " "
+             << out.y << " "
+             << out.rotate << "\n";
     }
 
     fout.close();

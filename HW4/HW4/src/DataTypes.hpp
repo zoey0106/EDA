@@ -25,12 +25,21 @@ struct SymGroup {
     vector<SymSelf> selfs;
 };
 
+class Output {
+    public:
+        string name;
+        int64_t x;
+        int64_t y;
+        bool rotate = false;
+};
+
 class Info {
     public:
         Info() = default;
     vector<HardBlock> hard_blocks;
     vector<SymGroup> sym_groups;
-    
+    vector<Output> output;
+    int64_t best_area;
     // ERROR check
     void print_symgroup();
     void print_blocks();
