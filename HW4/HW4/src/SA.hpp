@@ -176,26 +176,27 @@ inline void M1_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
 
     if (state.old_lchild){
         A->lchild = state.old_lchild;
-        A->parent = state.old_lchild->parent;
-        state.old_lchild->parent = A;
-        if (A->parent) state.oldIsLeft ? A->parent->lchild = A:A->parent->rchild = A;
-        else{
-            HB_tree.root = A;
-        }
+        A->lchild->parent = A;
     }
     if (state.old_rchild){
         A->rchild = state.old_rchild;
-        // 刪rchild原parent的child link
-        if (state.old_rchild->parent){
+
+        if (state.old_rchild->parent) {
             (state.old_rchild->parent->lchild == state.old_rchild) ? state.old_rchild->parent->lchild = nullptr: state.old_rchild->parent->rchild = nullptr;
         }
-        if (!state.old_lchild) A->parent = state.old_rchild->parent;
-        state.old_rchild->parent = A;
-        if (A->parent) state.oldIsLeft ? A->parent->lchild = A: A->parent->rchild = A;
-        else{
-            HB_tree.root = A;
-        }
+
+        A->rchild->parent = A;
     }
+
+    if (state.oldParent) {
+        state.oldIsLeft ? state.oldParent->lchild = A : state.oldParent->rchild = A;
+        A->parent = state.oldParent;
+    } else {
+        // root
+        HB_tree.root = A;
+        A->parent = nullptr;
+    }
+
     HB_tree.setPosition(); // note
 }
 
@@ -233,7 +234,7 @@ inline Record M1_move(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& HB_node){
     if (B->kind == NodeBase<ll>::Kind::Hierarchy) state.newIsLeft = true;
     // 2. 把點接過去 先切斷父母+小孩聯繫
     if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = nullptr;
-    A->lchild = A->rchild = nullptr;
+    A->parent = A->lchild = A->rchild = nullptr;
     
     // 3. if 有小孩 
     if (Al) { // 有左孩
@@ -404,7 +405,8 @@ inline Record M3_node_swapping(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& H
     }
     if (state.node->kind == NodeBase<ll>::Kind::Regular){
         // 只跟同樣為regular的人swap
-        state.node_swap = pick_node(HB_node);
+        do state.node_swap = pick_node(HB_node);
+        while (state.node->parent == state.node_swap || state.node_swap->parent == state.node);
         state.oldParent_swap = state.node_swap->parent;
         if (state.oldParent_swap){
             state.oldIsLeft_swap = (state.oldParent_swap->lchild == state.node_swap);
@@ -423,7 +425,7 @@ inline Record M3_node_swapping(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& H
     if (state.node->kind == NodeBase<ll>::Kind::Hierarchy){
         // swap 內部node
         pick_two_node(state, state.node->island->reps);
-        M3_hierarchy_swap(state, state.node->island->tree);
+        M3_hierarchy_swap(state, state.node->island->tree); // 有dangling node -> note
         set_island_position(*state.node->island);
         contour_update(state); // set relative coor. to contour & update contour node num
     }
@@ -525,7 +527,18 @@ inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase
 }
 
 inline Record select_move(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
-    return M1_move(HB_tree, HB_node);
+    uniform_real_distribution<double> dist(0.0, 1.0);
+    double prob = dist(gen);
+    if (prob > 0.8) {
+        return M1_move(HB_tree, HB_node);
+    }
+    else if (prob > 0.6) {
+        return M2_move_rotation(HB_tree, HB_node);
+    }
+    else {
+        return M3_node_swapping(HB_tree, HB_node);
+    }
+    // return M3_node_swapping(HB_tree, HB_node);
 }
 
 inline void set_best_floorplan(Info& data){
@@ -542,64 +555,45 @@ inline void set_best_floorplan(Info& data){
 inline void SA_algo(SA_Setting setting, Info& data, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
     setting.reset();
     double MT = 0, reject = 0, T = setting.T;
-    int epoch = 0, uphill = 0, N = setting.k * data.hard_blocks.size();
+    int uphill = 0, N = setting.k * data.hard_blocks.size();
     ll best_cost = area(data);
     ll prev_cost = best_cost;
 
     cout << "Initial best area: " << best_cost << "\n";
-    // testing...
-    Record state = select_move(HB_tree, HB_node);
-    cout << "New cost: " << area(data) << endl;
 
-    set_best_floorplan(data);
-
-    // state = select_move(HB_tree, HB_node);
-    // cout << "New cost: " << area(data) << endl;
-    // state = select_move(HB_tree, HB_node);
-    // cout << "New cost: " << area(data) << endl;
-    // state = select_move(HB_tree, HB_node);
-    // cout << "New cost: " << area(data) << endl;
-    // vector<HardBlock> best_floorplan;
-    // best_floorplan = data.hard_blocks;
-    // state = select_move(HB_tree, HB_node);
-    // cout << "New cost: " << area(data) << endl;
-    // data.hard_blocks = best_floorplan;
-    // cout << "Final area: " << area(data) << "\n";
     /* store best sol. in x/y coor. */
-    // vector<HardBlock> best_floorplan;
+    set_best_floorplan(data);
+    
+    while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= setting.eps){
+        MT = 0, reject = 0, uphill = 0;
+        while(uphill <= N && MT <= 2*N){
+            Record state = select_move(HB_tree, HB_node);
+            ll cur_cost = area(data);
+            ll delta_c = cur_cost - prev_cost;
+            uniform_real_distribution<double> dist(0.0, 1.0);
+            MT++;
+            if (delta_c <= 0){// accept
+                prev_cost = cur_cost;
+                if (cur_cost < best_cost){
+                    set_best_floorplan(data);
+                    best_cost = cur_cost;
+                }
+            }
+            else{
+                double random = dist(gen);
+                if (random < exp(-delta_c/T)){// accept
+                    uphill++;
+                    prev_cost = cur_cost;
+                }
+                else{// reject
+                    reject++;
+                    rollback(state, HB_tree, HB_node);
+                }
+            }
+        }
+        T = T_secheduling(T, setting.r);
+        cout << "Last cost:  " << prev_cost << " [ T: " << T << " ]\n";
+    }
 
-    // while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= setting.eps){
-    //     MT = 0, reject = 0, uphill = 0;
-    //     while(uphill <= N && MT <= 2*N){
-    //         Record& state = select_move(HB_tree, HB_node);
-    //         ll cur_cost = area(data);
-    //         ll delta_c = cur_cost - prev_cost;
-    //         uniform_real_distribution<double> dist(0.0, 1.0);
-    //         MT++;
-    //         if (delta_c <= 0){// accept
-    //             prev_cost = cur_cost;
-    //             if (cur_cost < best_cost){
-    //                 best_floorplan.clear();
-    //                 best_floorplan = data.hard_blocks;
-    //                 best_cost = cur_cost;
-    //             }
-    //         }
-    //         else{
-    //             double random = dist(gen);
-    //             if (random < exp(-delta_c/T)){// accept
-    //                 uphill++;
-    //                 prev_cost = cur_cost;
-    //             }
-    //             else{// reject
-    //                 reject++;
-    //                 rollback(state, HB_tree, HB_node);
-    //             }
-    //         }
-    //     }
-    //     T = T_secheduling(T, setting.r);
-    //     cout << "Last cost:  " << prev_cost << " [ T: " << T << " ]\n";
-    // }
-
-    // data.hard_blocks = best_floorplan;
-    // cout << "Final area: " << area(data) << "\n";
+    cout << "Final area: " << data.best_area << "\n";
 }

@@ -242,8 +242,8 @@ class HBStarTree
                 if (rep.is_self) rep.right_block->ptr->setAbsPosition(startX, real_y);
                 
                 T lx = rep.rep_node->x_abs;
-                T rx = lx + rep.right_block->width;
-                T ty = rep.rep_node->y_abs + rep.right_block->height;
+                T rx = lx + rep.right_block->ptr->width;
+                T ty = rep.rep_node->y_abs + rep.right_block->ptr->height;
                 
                 if (ty > contour_H.query(lx, rx-1)) contour_H.update(lx, rx - 1, ty);
                 max_x = std::max(rx, max_x);

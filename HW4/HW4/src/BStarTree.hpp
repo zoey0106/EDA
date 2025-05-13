@@ -207,55 +207,6 @@ class BStarTree
         return {maxWidth, maxHeight};
     }
 
-    // void _buildTopContours_(){
-    //     struct index {T x; T y; T id;};
-    //     T id = 0;
-    //     std::vector<contour_segment<T>> top;
-    //     std::vector<index> contour_end_idx;
-    //     std::unordered_map<T, T> toStartIdx;
-
-    //     for (auto& seg: top_contour){
-    //         index e = {seg.x2, seg.y, id};
-    //         contour_end_idx.push_back(e);
-    //         toStartIdx[id] = seg.x1;
-    //         id++;
-    //     }
-
-    //     sort(contour_end_idx.begin(), contour_end_idx.end(),[&](auto&a,auto&b){ if (a.x == b.x) return a.y > b.y; return a.x < b.x; });
-
-    //     for (auto& idx: contour_end_idx){
-    //         if (top.size() == 0){
-    //             top.push_back({toStartIdx[idx.id], idx.x, idx.y});
-    //             continue;
-    //         }
-    //         T x1 = toStartIdx[idx.id]; T x2 = idx.x; T y = idx.y;
-    //         for (auto& c: top){
-    //             bool c_high = (c.y > y);
-    //             if (x1 > c.x2) continue;
-    //             if (x1 == c.x2){
-    //                 if (y == c.y){ // same y -> extend
-    //                     c.x2 = x2;
-    //                     x1 = x2;// means kill 
-    //                     break;
-    //                 }
-    //                continue;
-    //             }
-    //             if (c_high){
-    //                 if (c.x2 > x1) x1 = c.x2;
-    //             }
-    //             else if (!c_high){
-    //                 if (c.x1 >= x1){
-    //                     c.x1 = c.x2;
-    //                 }
-    //             }
-    //             top.erase(remove_if(top.begin(), top.end(),
-    //             [](const contour_segment<T>& s){ return s.x1 >= s.x2; }),
-    //             top.end());
-    //             if (x1 < x2) top.push_back({x1, x2, y});
-    //         }
-    //         top_contour = std::move(top);
-    //     }
-    // }
     void _buildTopContours_(){
         T y = contourH.query(0, 0);
         T x = 0;
