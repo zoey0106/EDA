@@ -19,9 +19,9 @@ typedef int64_t ll;
 class SA_Setting{
     public:
         SA_Setting() = default;
-        long long k = 5;
+        long long k = 10;
         double eps = 1.0;
-        double r = 0.9;
+        double r = 0.997;
         double T = 1500.0;
         void reset(){
             k = 5; 
@@ -162,7 +162,6 @@ inline void contour_update(Record& state){
 inline void M1_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
     // 先拆原node
     auto* A = state.node;
-    auto* B = state.node_swap;
     NodeBase<ll>* Ap = A->parent;
     NodeBase<ll>* Al = A->lchild;
     NodeBase<ll>* Ar = A->rchild;
@@ -258,7 +257,6 @@ inline Record M1_move(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& HB_node){
             Ar->parent = Ap;
         }
     }
-    NodeBase<ll>* Bp = B->parent;
     NodeBase<ll>* Bl = B->lchild;
     NodeBase<ll>* Br = B->rchild;
     state.newIsLeft ? A->lchild = Bl: A->rchild = Br;
