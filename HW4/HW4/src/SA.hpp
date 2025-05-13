@@ -3,6 +3,7 @@
 #include <vector>
 #include <chrono>
 #include <array>
+#include <chrono>
 #include <unordered_set>
 #include "Global_param.hpp"
 #include "HBStarTree.hpp"
@@ -21,14 +22,14 @@ class SA_Setting{
         SA_Setting() = default;
         long long k = 10;
         double eps = 1.0;
-        double r = 0.997;
-        double T = 1500.0;
-        void reset(){
-            k = 5; 
-            eps = 1.0;
-            r = 0.9;
-            T = 1500.0;
-        };
+        double r = 0.99;
+        double T = 1000.0;
+        // void reset(){
+        //     k = 5; 
+        //     eps = 1.0;
+        //     r = 0.9;
+        //     T = 1500.0;
+        // };
 };
 
 struct Record{
@@ -551,7 +552,7 @@ inline void set_best_floorplan(Info& data){
 }
 
 inline void SA_algo(SA_Setting setting, Info& data, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
-    setting.reset();
+    //setting.reset();
     double MT = 0, reject = 0, T = setting.T;
     int uphill = 0, N = setting.k * data.hard_blocks.size();
     ll best_cost = area(data);
@@ -563,8 +564,24 @@ inline void SA_algo(SA_Setting setting, Info& data, HBStarTree<int64_t>& HB_tree
     set_best_floorplan(data);
     
     while((reject/(MT == 0 ? 1 : MT)) <= 0.95 && T >= setting.eps){
+        //--------time check--------//
+        auto now = chrono::high_resolution_clock::now();
+        double elapsed = chrono::duration<double>(now - program_start).count();
+        if (elapsed > TIME_LIMIT) {
+            cout << "[Info] Exiting due to TIME_LIMIT\n";
+            break;
+        }
+        //--------time check--------//
         MT = 0, reject = 0, uphill = 0;
         while(uphill <= N && MT <= 2*N){
+            //--------time check--------//
+            auto now = chrono::high_resolution_clock::now();
+            double elapsed = chrono::duration<double>(now - program_start).count();
+            if (elapsed > TIME_LIMIT) {
+                cout << "[Info] Exiting due to TIME_LIMIT\n";
+                break;
+            }
+            //--------time check--------//
             Record state = select_move(HB_tree, HB_node);
             ll cur_cost = area(data);
             ll delta_c = cur_cost - prev_cost;

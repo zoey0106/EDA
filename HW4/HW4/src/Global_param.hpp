@@ -7,5 +7,5 @@ using namespace std;
 #include <chrono>
 extern mt19937 gen;
 extern chrono::high_resolution_clock::time_point program_start;
-extern constexpr double TIME_LIMIT = 590.0;
+extern constexpr double TIME_LIMIT = 290.0;
 #endif
