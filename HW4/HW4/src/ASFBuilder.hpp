@@ -136,6 +136,8 @@ inline void mirror_island(ASFIsland &island){
         int64_t y = rep.rep_node->y;
         int64_t tmp_max = is_v ? x + block_id2->width : y + block_id2->height;
         max = (tmp_max > max) ? tmp_max : max; 
+        if (rep.is_self) tmp_max = is_v ? x + block_id2->width/2 : y + block_id2->height/2;
+
         auto* node = new Node<int64_t>;
         node->setShape(block_id2->width, block_id2->height);
         if (!rep.is_self){ // pair
@@ -198,6 +200,8 @@ inline void set_island_position(ASFIsland &island){
         int64_t x = rep.rep_node->x;
         int64_t y = rep.rep_node->y;
         int64_t tmp_max = is_v ? x + block_id2->ptr->width : y + block_id2->ptr->height;
+        if (rep.is_self) tmp_max = is_v ? x + block_id2->ptr->width/2 : y + block_id2->ptr->height/2;
+
         max = (tmp_max > max) ? tmp_max : max; 
         if (!rep.is_self){ // pair
             // for twin block

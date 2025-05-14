@@ -20,7 +20,7 @@ struct SymSelf {string id;};
 
 struct SymGroup {
     string name;
-    SymType type = SymType::V;
+    SymType type = SymType::V; 
     vector<SymPair> pairs;
     vector<SymSelf> selfs;
 };

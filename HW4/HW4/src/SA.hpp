@@ -5,6 +5,7 @@
 #include <array>
 #include <chrono>
 #include <unordered_set>
+#include <functional>
 #include "Global_param.hpp"
 #include "HBStarTree.hpp"
 #include "ASFBuilder.hpp"
@@ -84,7 +85,6 @@ inline NodeBase<int64_t>* pick_node(vector<NodeBase<int64_t>*>& HB_node){
     uniform_int_distribution<size_t> dist(0, HB_node.size() - 1);
     return HB_node[dist(gen)];
 }
-
 
 inline void contour_update(Record& state){
     auto& top_contours = state.node->island->tree.getTopContour(); // new contour
@@ -458,6 +458,8 @@ inline Record M2_move_rotation(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& H
         set_island_position(*state.node->island);
         // contour node updates
         contour_update(state);
+        // set HB_tree width shape
+        state.node->setShape(state.node->island->tree.returnTotalWidth(), 0);
     }
     else if (state.node->kind == NodeBase<ll>::Kind::Regular){
         state.node->reg_node->rotate ^= 1;
@@ -522,6 +524,8 @@ inline void M2_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
         // 需set 內部的position!
         set_island_position(*state.node->island);
         contour_update(state);
+        // set HB_tree width shape
+        state.node->setShape(state.node->island->tree.returnTotalWidth(), 0);
     }
     else if (state.node->kind == NodeBase<ll>::Kind::Regular){
         state.node->reg_node->rotate ^= 1;
@@ -555,18 +559,18 @@ inline void M4_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
     }
     // swap every lchild and rchild (full subtree swap)
     swap_subtree(state.node->island->tree.root);
-    // change symmetirc type
-    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H;
+    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H; // H is the problem.
     else state.node->island->type = SymType::V;
     // 需set 內部的position!
     set_island_position(*state.node->island);
     // contour node updates
     contour_update(state);
+    // set HB_tree width shape -> if rotate.
+    state.node->setShape(state.node->island->tree.returnTotalWidth(), 0);
     HB_tree.setPosition();
 }
 
 inline Record M4_move_convert_sym_type(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
-    // self-sym 有問題
     Record state{};
     do state.node = pick_node(HB_node);
     while(state.node->kind == NodeBase<ll>::Kind::Regular);
@@ -586,13 +590,15 @@ inline Record M4_move_convert_sym_type(HBStarTree<int64_t>& HB_tree, vector<Node
     // swap every lchild and rchild (full subtree swap)
     swap_subtree(state.node->island->tree.root);
     // change symmetirc type
-    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H;
+    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H; // H is the problem.
     else state.node->island->type = SymType::V;
 
     // 需set 內部的position!
     set_island_position(*state.node->island);
     // contour node updates
     contour_update(state);
+    // set HB_tree width shape
+    state.node->setShape(state.node->island->tree.returnTotalWidth(), 0);
     HB_tree.setPosition();
     return state;
 }
@@ -626,7 +632,7 @@ inline Record select_move(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>
     }
     // else return M4_move_convert_sym_type(HB_tree, HB_node);
 
-    return M1_move(HB_tree, HB_node);
+   return M1_move(HB_tree, HB_node);
 }
 
 inline void set_best_floorplan(Info& data){
