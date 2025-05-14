@@ -20,16 +20,14 @@ typedef int64_t ll;
 class SA_Setting{
     public:
         SA_Setting() = default;
-        long long k = 10;
+        // long long k = 10;
+        // double eps = 1.0;
+        // double r = 0.99;
+        // double T = 1000.0;
+        long long k = 5;
         double eps = 1.0;
-        double r = 0.99;
+        double r = 0.9;
         double T = 1000.0;
-        // void reset(){
-        //     k = 5; 
-        //     eps = 1.0;
-        //     r = 0.9;
-        //     T = 1500.0;
-        // };
 };
 
 struct Record{
@@ -64,7 +62,7 @@ struct Record{
     // after-state  
     NodeBase<int64_t>*  newParent;
     bool                newIsLeft;
-
+    Node<int64_t>* rep_node; 
     int M = 1; // movement
 };
 
@@ -280,6 +278,7 @@ inline void pick_blk(Record& state, vector<Represent>& reps){
     state.block1 = reps[idx].right_block;
     if (!reps[idx].is_self) state.block2 = reps[idx].left_block;
     state.is_self = reps[idx].is_self;
+    state.rep_node = reps[idx].rep_node;
 }
 
 inline void M3_regular_swap(Record& state, HBStarTree<ll>& HB_tree){
@@ -440,6 +439,16 @@ inline Record M2_move_rotation(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& H
         pick_blk(state, state.node->island->reps); // & set state
         swap(state.block1->ptr->width, state.block1->ptr->height); // swap Node 的w,h
         state.block1->ptr->rotate ^= 1;
+        if (state.is_self && state.node->island->type == SymType::V){
+            swap(state.rep_node->width, state.rep_node->height);
+            state.rep_node->width /= 2;
+            state.rep_node->height *= 2;
+        }
+        else if (state.is_self && state.node->island->type == SymType::H){
+            swap(state.rep_node->width, state.rep_node->height);
+            state.rep_node->width *= 2;
+            state.rep_node->height /= 2;
+        }
 
         if (!state.is_self){
             swap(state.block2->ptr->width, state.block2->ptr->height);
@@ -496,7 +505,16 @@ inline void M2_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
     if (state.node->kind == NodeBase<ll>::Kind::Hierarchy){
         swap(state.block1->ptr->width, state.block1->ptr->height); // swap Node 的w,h
         state.block1->ptr->rotate ^= 1;
-
+        if (state.is_self){
+            swap(state.rep_node->width, state.rep_node->height);
+            state.rep_node->width /= 2;
+            state.rep_node->height *= 2;
+        } 
+        else if (state.is_self && state.node->island->type == SymType::H){
+            swap(state.rep_node->width, state.rep_node->height);
+            state.rep_node->width *= 2;
+            state.rep_node->height /= 2;
+        }
         if (!state.is_self){
             swap(state.block2->ptr->width, state.block2->ptr->height);
             state.block2->ptr->rotate ^= 1;
@@ -513,6 +531,72 @@ inline void M2_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
     HB_tree.setPosition();
 }
 
+inline void swap_subtree(Node<ll> *node){
+    if (!node) return ;
+    Node<ll> *lchild_temp = node->lchild;
+    node->lchild = node->rchild;
+    node->rchild = lchild_temp;
+    swap_subtree(node->lchild);
+    swap_subtree(node->rchild);
+}
+
+inline void M4_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
+    // rotate every module
+    for (auto& rep: state.node->island->reps){
+        swap(rep.right_block->ptr->width, rep.right_block->ptr->height);
+        rep.right_block->ptr->rotate ^= 1;
+        if (rep.is_self) {
+            swap(rep.rep_node->width, rep.rep_node->height);
+        }
+        if (!rep.is_self){
+            swap(rep.left_block->ptr->width, rep.left_block->ptr->height);
+            rep.left_block->ptr->rotate ^= 1;
+        }
+    }
+    // swap every lchild and rchild (full subtree swap)
+    swap_subtree(state.node->island->tree.root);
+    // change symmetirc type
+    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H;
+    else state.node->island->type = SymType::V;
+    // 需set 內部的position!
+    set_island_position(*state.node->island);
+    // contour node updates
+    contour_update(state);
+    HB_tree.setPosition();
+}
+
+inline Record M4_move_convert_sym_type(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
+    // self-sym 有問題
+    Record state{};
+    do state.node = pick_node(HB_node);
+    while(state.node->kind == NodeBase<ll>::Kind::Regular);
+    state.M = 4;
+    // rotate every module
+    for (auto& rep: state.node->island->reps){
+        rep.right_block->ptr->rotate ^= 1;
+        swap(rep.right_block->ptr->width, rep.right_block->ptr->height);
+        if (rep.is_self) {
+            swap(rep.rep_node->width, rep.rep_node->height);
+        }
+        if (!rep.is_self){
+            swap(rep.left_block->ptr->width, rep.left_block->ptr->height);
+            rep.left_block->ptr->rotate ^= 1;
+        }
+    }
+    // swap every lchild and rchild (full subtree swap)
+    swap_subtree(state.node->island->tree.root);
+    // change symmetirc type
+    if (state.node->island->type == SymType::V) state.node->island->type = SymType::H;
+    else state.node->island->type = SymType::V;
+
+    // 需set 內部的position!
+    set_island_position(*state.node->island);
+    // contour node updates
+    contour_update(state);
+    HB_tree.setPosition();
+    return state;
+}
+
 inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
     switch(state.M){
         case 1: M1_rollback(state, HB_tree, HB_node); 
@@ -521,6 +605,8 @@ inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase
             break;
         case 3: M3_rollback(state, HB_tree, HB_node);
             break;
+        case 4: M4_rollback(state, HB_tree, HB_node);
+            break;
         default: break;
     }
 }
@@ -528,16 +614,19 @@ inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase
 inline Record select_move(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
     uniform_real_distribution<double> dist(0.0, 1.0);
     double prob = dist(gen);
+    
     if (prob > 0.8) {
         return M1_move(HB_tree, HB_node);
     }
     else if (prob > 0.6) {
         return M2_move_rotation(HB_tree, HB_node);
     }
-    else {
+    else if (prob > 0.01){
         return M3_node_swapping(HB_tree, HB_node);
     }
-    // return M3_node_swapping(HB_tree, HB_node);
+    // else return M4_move_convert_sym_type(HB_tree, HB_node);
+
+    return M1_move(HB_tree, HB_node);
 }
 
 inline void set_best_floorplan(Info& data){
