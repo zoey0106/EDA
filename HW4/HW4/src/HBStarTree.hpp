@@ -139,69 +139,6 @@ class HBStarTree
 
         return node->width + getTotalWidth(node->lchild) + getTotalWidth(node->rchild);
     }
-    // void contour_updtate(NodeBase<T>* node){
-    //     auto& top_contours = node->island->tree.getTopContour();
-    //     NodeBase<ll> * contour = state.node->rchild;
-    //     NodeBase<ll> * prev = contour;
-
-    //     for (auto& top_c: top_contours){ // 如果有多 -> 建新node
-    //         if (contour){
-    //             contour->setPos(top_c.x1, top_c.y);
-    //             contour->setShape(top_c.x2 - top_c.x1, 0);
-    //             prev = contour;
-    //             contour = contour->lchild;
-    //         }
-    //         else{
-    //             auto* contour_node = new NodeBase<ll>(NodeBase<ll>::Kind::Contour);
-    //             contour_node->setPos(top_c.x1, top_c.y);
-    //             contour_node->setShape(top_c.x2 - top_c.x1, 0); 
-    //             prev->lchild = contour_node;
-    //             contour_node->parent = prev;
-    //             prev = contour_node;
-    //         }
-    //     }
-    //     vector<NodeBase<ll>*> dangling_nodes;
-    //     vector<NodeBase<ll>*> del_contour_nodes;
-    //     NodeBase<ll>* nearest_contour = prev;
-
-    //     // 如果有少 刪node+搬移底下node
-    //     while(contour){
-    //         if (contour->rchild) dangling_nodes.push_back(contour->rchild);
-    //         del_contour_nodes.push_back(contour);
-    //         prev = contour;
-    //         contour = contour->lchild;
-    //     }
-    //     // 刪contour node + 有關node的連結
-    //     for (auto& node: del_contour_nodes){
-    //         if (node->parent) node->parent->lchild = nullptr;
-    //         node->parent = nullptr;
-    //         node->lchild = nullptr;
-    //         node->rchild = nullptr;
-    //         delete node;
-    //     }
-    //     bool is_first = true;
-    //     // 掛回 dangling node
-    //     for (auto& dn: dangling_nodes){
-    //         if (!dn) continue;
-    //         if (is_first){
-    //             // 往右看
-    //             if (!nearest_contour->rchild){
-    //                 nearest_contour->rchild = dn;
-    //                 dn->parent = nearest_contour;
-    //                 nearest_contour = nearest_contour->rchild;
-    //                 is_first = false;
-    //                 continue;
-    //             } 
-    //             nearest_contour = nearest_contour->rchild;
-    //             is_first = false;
-    //         }
-
-    //         while(nearest_contour->lchild) nearest_contour = nearest_contour->lchild;
-    //         nearest_contour->lchild = dn;
-    //         dn->parent = nearest_contour;
-    //         nearest_contour = nearest_contour->lchild;
-    //     }
-    // }
     /* Packing (get area) */
     void setPosition(NodeBase<T> *node, T startX){
         if (!node) return;
@@ -236,7 +173,6 @@ class HBStarTree
 
             T max_x = 0;
             for (auto& rep: node->island->reps){
-                //testing
                 rep.rep_node->setAbsPosition(startX, real_y);
                 // 靠邀阿 rep node != block_node if self-sym
                 if (rep.is_self) rep.right_block->ptr->setAbsPosition(startX, real_y);
@@ -257,10 +193,8 @@ class HBStarTree
                     max_x = std::max(rx, max_x);
                 }
             }
-            //update contour
-            // contour_update(node);//
             setPosition(node->lchild, max_x);
-            setPosition(node->rchild, startX); //  contour
+            setPosition(node->rchild, startX);
         }
     }
     void printTree(NodeBase<T> *n){
