@@ -193,10 +193,8 @@ class HBStarTree
                     max_x = std::max(rx, max_x);
                 }
             }
-            //update contour
-            // contour_update(node);//
             setPosition(node->lchild, max_x);
-            setPosition(node->rchild, startX); //  contour
+            setPosition(node->rchild, startX);
         }
     }
     void printTree(NodeBase<T> *n){

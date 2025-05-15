@@ -21,14 +21,14 @@ typedef int64_t ll;
 class SA_Setting{
     public:
         SA_Setting() = default;
-        // long long k = 10;
-        // double eps = 1.0;
-        // double r = 0.99;
-        // double T = 1000.0;
-        long long k = 5;
+        long long k = 10;
         double eps = 1.0;
-        double r = 0.9;
-        double T = 1000.0;
+        double r = 0.99;
+        double T = 2000.0;
+        // long long k = 5;
+        // double eps = 1.0;
+        // double r = 0.9;
+        // double T = 1000.0;
 };
 
 struct Record{
@@ -630,9 +630,9 @@ inline Record select_move(HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>
     else if (prob > 0.01){
         return M3_node_swapping(HB_tree, HB_node);
     }
-    // else return M4_move_convert_sym_type(HB_tree, HB_node);
+    //else return M4_move_convert_sym_type(HB_tree, HB_node);
 
-   return M1_move(HB_tree, HB_node);
+    return M1_move(HB_tree, HB_node);
 }
 
 inline void set_best_floorplan(Info& data){
