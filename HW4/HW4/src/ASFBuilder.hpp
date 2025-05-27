@@ -142,7 +142,10 @@ inline void mirror_island(ASFIsland &island){
         node->setShape(block_id2->width, block_id2->height);
         if (!rep.is_self){ // pair
             // for twin block
-            is_v ? node->setPosition(axis*2 - x - block_id2->width, y):node->setPosition(x, axis*2 - y - block_id2->height);
+            if (block_id1->width!=block_id2->width || block_id1->height!=block_id2->height) {
+                node->rotate = true; 
+            }
+            is_v ? node->setPosition(axis*2 - x - node->width, y):node->setPosition(x, axis*2 - y - node->height);
         }else if (rep.is_self){ // self
             //超容易錯 乾
             is_v ? node->setPosition(-block_id2->width/2 , y): node->setPosition(x, -block_id2->height/2);

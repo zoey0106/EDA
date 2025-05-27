@@ -11,8 +11,9 @@ using namespace std;
 int main(int argc, char *argv[]){
     Info data;
     ifstream input = read_file(argv[1]);
+    
     build_data_structure(data, input);
-
+    // align_symPair_rotate(data, input);
     /* Symmetry Group: Construct ASF-B*-tree*/
     vector<ASFIsland> island; // ASF-B*-tree for each group
     vector<NodeBase<int64_t>*> HB_node;
