@@ -1,4 +1,4 @@
-NumHardBlocks 65
+NumHardBlocks 24
 HardBlock m1 12 331
 HardBlock m2 98 222
 HardBlock m3 111 86
@@ -12,6 +12,8 @@ HardBlock m10 74 171
 HardBlock m11 74 171
 HardBlock m12 74 171
 HardBlock m13 88 144 
+HardBlock m14 88 144 
+HardBlock m15 88 144 
 HardBlock m16 60 110
 HardBlock m17 61 86
 HardBlock m18 24 86

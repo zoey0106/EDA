@@ -18,13 +18,14 @@ typedef int64_t ll;
  * perturb 4: Representative Change
  * perturb 5: 
  */
+bool is_reg = false;
 class SA_Setting{
     public:
         SA_Setting() = default;
-        long long k = 10;
+        long long k = 5;
         double eps = 1.0;
-        double r = 0.99;
-        double T = 2000.0;
+        double r = 0.97;
+        double T = 1000.0;
         // long long k = 5;
         // double eps = 1.0;
         // double r = 0.9;
@@ -196,80 +197,6 @@ inline void M1_rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeB
     }
 
     HB_tree.setPosition(); // note
-}
-
-inline Record M1_move(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& HB_node){
-    /**
-     * ~Node Movement~
-     * 1. pick regular node to move
-     * 2. if attach_node is HB -> can only be placed at its left
-     * 3. else placed either side.
-     */
-    /* Rollback infomation store */
-    Record state{};
-    state.M = 1;
-    do state.node = pick_node(HB_node); 
-    while(state.node->kind != NodeBase<ll>::Kind::Regular);
-    
-    state.oldParent = state.node->parent;
-    if (state.oldParent){
-        state.oldIsLeft = (state.oldParent->lchild == state.node);
-    }
-    state.old_rchild = state.node->rchild;
-    state.old_lchild = state.node->lchild;
-    
-    do state.node_swap = pick_node(HB_node);
-    while(state.node == state.node_swap);
-
-    auto* A = state.node;
-    auto* B = state.node_swap;
-    NodeBase<ll>* Ap = A->parent;
-    NodeBase<ll>* Al = A->lchild;
-    NodeBase<ll>* Ar = A->rchild;
-    // 1. 先決定要在新點下的左還是右
-    uniform_int_distribution<size_t> dist(0, 1);
-    state.newIsLeft = dist(gen);
-    if (B->kind == NodeBase<ll>::Kind::Hierarchy) state.newIsLeft = true;
-    // 2. 把點接過去 先切斷父母+小孩聯繫
-    if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = nullptr;
-    A->parent = A->lchild = A->rchild = nullptr;
-    
-    // 3. if 有小孩 
-    if (Al) { // 有左孩
-        if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = Al;
-        else { // A is root -> Al become root
-            HB_tree.root = Al;
-        }
-        Al->parent = Ap;
-    }
-    if (Ar) { // 有右+左孩 -> 找左孩的最右點 / 若沒左孩+A是root 自己當root / 沒左孩 -> 直接自己接
-        if (Al){
-            while(Al->rchild) Al = Al->rchild;
-            Al->rchild = Ar;
-            Ar->parent = Al;
-        }
-        else{
-            if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = Ar;
-            else {
-                HB_tree.root = Ar;
-            }
-            Ar->parent = Ap;
-        }
-    }
-    NodeBase<ll>* Bl = B->lchild;
-    NodeBase<ll>* Br = B->rchild;
-    state.newIsLeft ? A->lchild = Bl: A->rchild = Br;
-    
-    if (state.newIsLeft) {
-        if (Bl) Bl->parent = A;
-    } else {
-        if (Br) Br->parent = A;
-    }     
-    state.newIsLeft ? B->lchild = A : B->rchild = A; // 父母接小孩
-    A->parent = B;
-
-    HB_tree.setPosition(); // cal. new coor.
-    return state;
 }
 
 inline void pick_blk(Record& state, vector<Represent>& reps){
@@ -603,6 +530,81 @@ inline Record M4_move_convert_sym_type(HBStarTree<int64_t>& HB_tree, vector<Node
     return state;
 }
 
+inline Record M1_move(HBStarTree<ll>& HB_tree, vector<NodeBase<ll>*>& HB_node){
+    /**
+     * ~Node Movement~
+     * 1. pick regular node to move
+     * 2. if attach_node is HB -> can only be placed at its left
+     * 3. else placed either side.
+     */
+    if (is_reg == false) {return M3_node_swapping(HB_tree, HB_node);};
+    /* Rollback infomation store */
+    Record state{};
+    state.M = 1;
+    do state.node = pick_node(HB_node); 
+    while(state.node->kind != NodeBase<ll>::Kind::Regular);
+    
+    state.oldParent = state.node->parent;
+    if (state.oldParent){
+        state.oldIsLeft = (state.oldParent->lchild == state.node);
+    }
+    state.old_rchild = state.node->rchild;
+    state.old_lchild = state.node->lchild;
+    
+    do state.node_swap = pick_node(HB_node);
+    while(state.node == state.node_swap);
+
+    auto* A = state.node;
+    auto* B = state.node_swap;
+    NodeBase<ll>* Ap = A->parent;
+    NodeBase<ll>* Al = A->lchild;
+    NodeBase<ll>* Ar = A->rchild;
+    // 1. 先決定要在新點下的左還是右
+    uniform_int_distribution<size_t> dist(0, 1);
+    state.newIsLeft = dist(gen);
+    if (B->kind == NodeBase<ll>::Kind::Hierarchy) state.newIsLeft = true;
+    // 2. 把點接過去 先切斷父母+小孩聯繫
+    if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = nullptr;
+    A->parent = A->lchild = A->rchild = nullptr;
+    
+    // 3. if 有小孩 
+    if (Al) { // 有左孩
+        if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = Al;
+        else { // A is root -> Al become root
+            HB_tree.root = Al;
+        }
+        Al->parent = Ap;
+    }
+    if (Ar) { // 有右+左孩 -> 找左孩的最右點 / 若沒左孩+A是root 自己當root / 沒左孩 -> 直接自己接
+        if (Al){
+            while(Al->rchild) Al = Al->rchild;
+            Al->rchild = Ar;
+            Ar->parent = Al;
+        }
+        else{
+            if (Ap) (state.oldIsLeft ? Ap->lchild : Ap->rchild) = Ar;
+            else {
+                HB_tree.root = Ar;
+            }
+            Ar->parent = Ap;
+        }
+    }
+    NodeBase<ll>* Bl = B->lchild;
+    NodeBase<ll>* Br = B->rchild;
+    state.newIsLeft ? A->lchild = Bl: A->rchild = Br;
+    
+    if (state.newIsLeft) {
+        if (Bl) Bl->parent = A;
+    } else {
+        if (Br) Br->parent = A;
+    }     
+    state.newIsLeft ? B->lchild = A : B->rchild = A; // 父母接小孩
+    A->parent = B;
+
+    HB_tree.setPosition(); // cal. new coor.
+    return state;
+}
+
 inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
     switch(state.M){
         case 1: M1_rollback(state, HB_tree, HB_node); 
@@ -614,6 +616,15 @@ inline void rollback(Record state, HBStarTree<int64_t>& HB_tree, vector<NodeBase
         case 4: M4_rollback(state, HB_tree, HB_node);
             break;
         default: break;
+    }
+}
+
+inline void set_is_reg(vector<NodeBase<int64_t>*>& HB_node){
+    for(auto& node: HB_node){
+        if (node->kind == NodeBase<ll>::Kind::Regular){
+            is_reg = true;
+            break;
+        }
     }
 }
 
@@ -647,7 +658,7 @@ inline void set_best_floorplan(Info& data){
 }
 
 inline void SA_algo(SA_Setting setting, Info& data, HBStarTree<int64_t>& HB_tree, vector<NodeBase<int64_t>*>& HB_node){
-    //setting.reset();
+    set_is_reg(HB_node);
     double MT = 0, reject = 0, T = setting.T;
     int uphill = 0, N = setting.k * data.hard_blocks.size();
     ll best_cost = area(data);
