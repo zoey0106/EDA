@@ -31,7 +31,7 @@ Row build_row(ifstream& input, vector<string> tokens, Info& data){
     ll site_number = stoll(tokens[6]);
     vector<Site> sites;
     for (ll i = 0; i < site_number; i++){
-        Site site{false, x, y};
+        Site site{x, y};
         sites.push_back(site);
         x += site_width;
     }

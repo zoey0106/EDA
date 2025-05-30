@@ -19,7 +19,6 @@ struct Blockage {
 };
 
 struct Site {
-    bool is_block;
     ll x, y;
 };
 
@@ -45,7 +44,6 @@ class Info {
     void print_site();
 };
 
-void sort_cell(Info& data);
-void sort_row(Info& data);
-void set_block(Info& data);
+void sort(Info& data);
+void set_subrow(Info& data);
 ll find_closest_row(vector<Row>& rows, dd y);

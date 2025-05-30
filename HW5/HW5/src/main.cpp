@@ -9,9 +9,9 @@ int main(int argc, char *argv[]){
     ifstream input = read_file(argv[1]);
     
     build_data_structure(data, input);
-    sort_cell(data); // ascending
-    sort_row(data); // ascending
-    set_block(data); // block site
+    sort(data); // ascending
+    set_subrow(data);
+    cout << "dddd\n";
     // write_output(data, argv[2]);
     return 0;
 }
