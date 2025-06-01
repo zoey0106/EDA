@@ -5,13 +5,14 @@
 #include "Abacus.hpp"
 using namespace std;
 
-ll overlap_site(Row& row, ll x){ //// 5 kinds of possible way 
+ll overlap_site(Row& row, ll x, ll width){ 
     /** Return site num that x is on
-     *  If no overlap -> return closest site_id
+     *  If no overlap -> return closest site_id that can fit full cell
      */
     if (x <= row.x) return 0;
     ll site_id = (x - row.x) / row.site_width;
-    if (site_id >= row.site.size()) return row.site.size() - 1;
+    ll site_w = (width + row.site_width - 1)/ row.site_width;
+    if (site_id + site_w > row.site.size()) return row.site.size() - site_w;
     return site_id;
 }
 
@@ -58,7 +59,7 @@ ll PlaceRow(Row& row, ll D_max){
 
     for (ll i = 0; i < row.cells.size(); i++){
         ll cell_x = row.cells[i].x;
-        ll cell_site = overlap_site(row, cell_x);
+        ll cell_site = overlap_site(row, cell_x, row.cells[i].width);
         // (!C.empty() && (C.back().s_id + C.back().s_w - 1) >= cell_site);
         bool is_overlap =  (!C.empty()) && (C.back().s_id + C.back().s_w - 1) >= cell_site; 
 
@@ -76,16 +77,11 @@ ll PlaceRow(Row& row, ll D_max){
     ll site_w, x;
     for (auto&c : C){
         x = c.s_id;
+        if (x < 0) return -1; // total width is bigger than row.width
         while (i <= c.n_last){
             x_shift = row.cells[i].x - row.site[x].x;
             y_shift = row.cells[i].y - row.y;
-            if (x_shift*x_shift + y_shift*y_shift > D_max) {
-                // cout << "site id: " << x << "\n";
-                // cout << "x: " << row.site[x].x << "y: " << row.y << endl;
-                // cout << x_shift*x_shift + y_shift*y_shift << " " << D_max;
-                // cout << "violate constraint\n" ;
-                return -1;
-            }// constraint
+            if (x_shift*x_shift + y_shift*y_shift > D_max) return -1; // constraint
             site_w = (row.cells[i].width + row.site_width - 1)/ row.site_width;
             if ((x + site_w - 1)> row.site.size() - 1) return -1; // exceed row right boundary 
             row.cells[i].site_id = x;
@@ -110,7 +106,7 @@ void Abacus(Info& data){
     vector<Row>& rows = data.rows;
     ll D_max = data.max_displaced * data.max_displaced;
     for (auto& cell: data.cells){
-        ll ptr, Row_near = find_closest_row(rows, cell.y);
+        ll ptr, Row_near = find_closest_row(rows, cell.x, cell.y);
         ptr = Row_near;
         ll C_best = INT64_MAX;
         ll R_best = ptr;

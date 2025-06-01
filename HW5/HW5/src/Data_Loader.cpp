@@ -145,7 +145,6 @@ void write_output(Info& data, string filename){
             if (ceil(x_shift*x_shift + y_shift*y_shift) > D_max) 
      */
     double max_D = 0, total_D = 0;
-    string max_D_cell;
     double x_shift, y_shift;
     for (auto& row: data.rows){
         for (auto& cell: row.cells){
@@ -155,13 +154,11 @@ void write_output(Info& data, string filename){
             total_D += D;
             if (max_D < D) {
                 max_D = D;
-                max_D_cell = cell.name;
             }
         }
     }
     fout << "TotalDisplacement " << static_cast<ll>(ceil(total_D)) << "\n";
     fout << "MaxDisplacement " << static_cast<ll>(ceil(max_D)) << "\n";
-    cout << max_D_cell;
 
     fout << "NumCells " << data.cells.size() << "\n";
     for (auto& row: data.rows){

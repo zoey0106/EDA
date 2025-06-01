@@ -42,12 +42,13 @@ public:
     void print_cells();
     void print_blockages();
     void print_rows();
+    void print_rows_by_name(string name);
     void print_site();
 };
 
 void sort(Info& data);
 void set_subrow(Info& data);
-ll find_closest_row(vector<Row>& rows, dd y);
+ll find_closest_row(vector<Row>& rows, dd x, dd y);
 
 class Cluster{
 public:

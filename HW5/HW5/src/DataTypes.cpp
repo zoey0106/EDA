@@ -39,7 +39,7 @@ void sort(Info& data){
     sort_blockage(data);
 }
 
-ll find_closest_row(vector<Row>& rows, dd y){
+ll find_closest_row(vector<Row>& rows, dd x, dd y){
     /** Input DataType : Rows , double y
      *  Return : Closest row index regarding y (first one)
      */
@@ -51,7 +51,31 @@ ll find_closest_row(vector<Row>& rows, dd y){
 
     size_t up = distance(rows.begin(), it);  
     size_t low = up - 1;
-    return (abs(rows[up].y - y) < abs(rows[low].y - y)) ? up : low;
+    bool is_up = (abs(rows[up].y - y) < abs(rows[low].y - y));
+    ll best_row = is_up ? up : low;
+    ll best_y = is_up ? rows[up].y : rows[low].y;
+    if (is_up) {
+        ll min_x_D = abs(rows[up].x - x);
+        while (up < rows.size() && rows[up].y == best_y){
+            if (min_x_D > abs(rows[up].x - x)){ 
+                min_x_D = abs(rows[up].x - x);
+                best_row = up;
+            }
+            up++;
+        }
+    }
+    else{
+        ll min_x_D = abs(rows[low].x - x);
+        while (low >= 0 && rows[low].y == best_y){
+            if (min_x_D > abs(rows[low].x - x)){ 
+                min_x_D = abs(rows[low].x - x);
+                best_row = low;
+            }
+            low--;
+        }
+    }
+    return best_row;
+    // return (abs(rows[up].y - y) < abs(rows[low].y - y)) ? up : low;
 }
 
 bool is_y_overlap(Blockage& blockage, Row& row){
@@ -169,6 +193,19 @@ void Info::print_blockages(){
         cout << "x: " << blockage.x << "  y: " << blockage.y << "\n";
     }
     cout << "----PRINT BLOCKAGES END----\n";
+}
+
+void Info::print_rows_by_name(string name){
+    cout << "----PRINT ROWS START----\n";
+    for (auto& row: rows){
+        if (row.name == name){
+            cout << "Row Name: " <<row.name << "  ";
+            cout << "width: " << row.width << "  " << "height: " << row.height << "\n"; 
+            cout << "x: " << row.x << "  y: " << row.y << "\n";
+            cout << "number of site: " << row.site.size() << "  site width:  " << row.site_width << "\n";
+        }
+    }
+    cout << "----PRINT ROWS END----\n";
 }
 
 void Info::print_rows(){
