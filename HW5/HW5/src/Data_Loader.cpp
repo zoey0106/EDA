@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <functional>
+#include <cmath>
 #include "Data_Loader.hpp"
 #include "DataTypes.hpp" 
 
@@ -29,6 +30,7 @@ Row build_row(ifstream& input, vector<string> tokens, Info& data){
     ll x = stoll(tokens[4]);
     ll y = stoll(tokens[5]);
     ll site_number = stoll(tokens[6]);
+    vector<Cell> cells;
     vector<Site> sites;
     for (ll i = 0; i < site_number; i++){
         Site site{x, y};
@@ -36,7 +38,7 @@ Row build_row(ifstream& input, vector<string> tokens, Info& data){
         x += site_width;
     }
     ll row_width = site_number * site_width;
-    Row row{tokens[1], stoll(tokens[2]), row_width, stoll(tokens[3]), stoll(tokens[4]), stoll(tokens[5]), sites};
+    Row row{tokens[1], stoll(tokens[2]), row_width, stoll(tokens[3]), stoll(tokens[4]), stoll(tokens[5]), sites, cells};
     return row;
 }
 
@@ -137,16 +139,32 @@ void write_output(Info& data, string filename){
         cout << "File path_name: " << output_file_path;
         exit(1);
     }
+    /**
+     * x_shift = row.cells[i].x - row.site[x].x;
+            y_shift = row.cells[i].y - row.y;
+            if (ceil(x_shift*x_shift + y_shift*y_shift) > D_max) 
+     */
+    double max_D = 0, total_D = 0;
+    double x_shift, y_shift;
+    for (auto& row: data.rows){
+        for (auto& cell: row.cells){
+            x_shift = cell.x - row.site[cell.site_id].x;
+            y_shift = cell.y - row.y;
+            double D = sqrt(x_shift * x_shift + y_shift * y_shift);
+            total_D += D;
+            if (max_D < D) max_D = D;
+        }
+    }
+    fout << "TotalDisplacement " << static_cast<ll>(ceil(total_D)) << "\n";
+    fout << "MaxDisplacement " << static_cast<ll>(ceil(max_D)) << "\n";
+    
 
-    // fout << "Area " << data.best_area << '\n';
-
-    // fout << "NumHardBlocks " << data.output.size() << "\n";
-    // for (auto& out: data.output){
-    //     fout << out.name << " "
-    //          << out.x << " "
-    //          << out.y << " "
-    //          << out.rotate << "\n";
-    // }
-
+    fout << "NumCells " << data.cells.size() << "\n";
+    for (auto& row: data.rows){
+        // fout << row.name << "\n";
+        for (auto& cell: row.cells){
+            fout << cell.name << " " << row.site[cell.site_id].x << " " << row.y << "\n";        
+        }
+    }
     fout.close();
 }

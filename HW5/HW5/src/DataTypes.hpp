@@ -28,11 +28,12 @@ struct Row {
     ll width, height;
     ll x, y; // global placement result
     vector<Site> site;
+    vector<Cell> cells; // Init: empty
 };
 
 class Info {
-    public:
-        Info() = default;
+public:
+    Info() = default;
     vector<Cell> cells;
     vector<Blockage> blockages;
     vector<Row> rows;
@@ -47,3 +48,10 @@ class Info {
 void sort(Info& data);
 void set_subrow(Info& data);
 ll find_closest_row(vector<Row>& rows, dd y);
+
+class Cluster{
+public:
+    ll n_first, n_last;
+    // s_id = x_c, s_w = w_c (# of site)
+    ll q_c, e_c, s_w, s_id; 
+};

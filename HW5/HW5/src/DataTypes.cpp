@@ -2,7 +2,7 @@
 #include <string>
 #include <algorithm>
 #include <cmath>
-#include <optional>
+#include <list>
 #include "DataTypes.hpp"
 
 // sort in ascending order
@@ -40,33 +40,40 @@ void sort(Info& data){
 }
 
 ll find_closest_row(vector<Row>& rows, dd y){
-    /** Input DataType : Rows , double
+    /** Input DataType : Rows , double y
      *  Return : Closest row index regarding y (first one)
      */
 
     auto it = lower_bound(rows.begin(), rows.end(), y, [&](const Row& row, dd val){return row.y < val;});
 
-    if (it == rows.begin()) return 0;
-    if (it == rows.end()) return rows.size()-1;
+    if (it == rows.begin()) return 0; 
+    if (it == rows.end()) return rows.size()-1; 
 
     size_t up = distance(rows.begin(), it);  
     size_t low = up - 1;
     return (abs(rows[up].y - y) < abs(rows[low].y - y)) ? up : low;
 }
 
-bool is_overlap(Blockage& blockage, Row& row){
-    if (row.width == 0) return false;
+bool is_y_overlap(Blockage& blockage, Row& row){
+    ll block_y1 = blockage.y;
+    ll block_y2 = block_y1 + blockage.height;
+    ll row_y1 = row.y;
+    ll row_y2 = row_y1 + row.height;
+    if (max(block_y1, row_y1) < min(block_y2, row_y2)) return true;
+    return false;
+}
+
+bool is_x_overlap(Blockage& blockage, Row& row){
     ll block_x1 = blockage.x;
     ll block_x2 = block_x1 + blockage.width;
     ll row_x1 = row.x;
     ll row_x2 = row_x1 + row.width;
-    if (max(block_x1, row_x1) < min(block_x2, row_x2)) {
-        ll block_y1 = blockage.y;
-        ll block_y2 = block_y1 + blockage.height;
-        ll row_y1 = row.y;
-        ll row_y2 = row_y1 + row.height;
-        if (max(block_y1, row_y1) < min(block_y2, row_y2)) return true;
-    }
+    if (max(block_x1, row_x1) < min(block_x2, row_x2)) return true;
+    return false;
+}
+
+bool is_overlap(Blockage& blockage, Row& row){
+    if (is_x_overlap(blockage, row)) return is_y_overlap(blockage, row);
     return false;
 }
 
@@ -100,30 +107,46 @@ vector<Row> slice_row(Row& row, ll x1, ll x2){
     return rows;
 }
 
+list<Row> build_row_list(Info& data){
+    list<Row> row_list;
+    for (auto& row: data.rows){
+        row_list.push_back(row);
+    }
+    return row_list;
+}
+
 void set_subrow(Info& data){
     /** 
      *  Slice rows according to blockage into subrow
      */
-    for (auto& blockage: data.blockages){
-        vector<Row> sub_rows;
-        for (auto& row: data.rows){
-            if (is_overlap(blockage, row)){
-                ll x1 = max(blockage.x, row.x);
-                ll x2 = min(blockage.x + blockage.width, row.x + row.width);
-                vector<Row> sub_row = slice_row(row, x1, x2);
+    list<Row> row_list = build_row_list(data);
+    auto row = row_list.begin();
+    for (auto& block: data.blockages){
+        while(row != row_list.end() && !is_y_overlap(block, *row)) ++row;
+        auto ptr = row;
+        while(is_y_overlap(block, *ptr)){
+            if (is_x_overlap(block, *ptr)){
+                ll x1 = max(block.x, ptr->x);
+                ll x2 = min(block.x + block.width, ptr->x + ptr->width);
+                vector<Row> sub_row = slice_row(*ptr, x1, x2);
                 if (sub_row.size()) {
-                    row = sub_row[0];
-                    if (sub_row.size() == 2) sub_rows.push_back(sub_row[1]);
+                    *ptr = sub_row[0];
+                    if (sub_row.size() == 2) row_list.insert(next(ptr), sub_row[1]);
+                    if (row == row_list.end()) break;
+                    ++ptr;
                 }
-                else row.width = 0;
+                else ptr = row_list.erase(ptr);
+            }else{
+                if (row == row_list.end()) break;
+                ++ptr;
             }
         }
-        data.rows.insert(data.rows.end(), sub_rows.begin(), sub_rows.end());
     }
-    data.rows.erase(
-        std::remove_if(data.rows.begin(), data.rows.end(),
-                       [](const Row& r) { return r.width == 0; }),
-        data.rows.end());
+    vector<Row> sliced_row;
+    for (auto it = row_list.begin(); it != row_list.end(); ++it){
+        sliced_row.push_back(*it);
+    }
+    data.rows = move(sliced_row);
     sort_row(data);
 }
 
