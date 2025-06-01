@@ -5,11 +5,11 @@
 #include "Abacus.hpp"
 using namespace std;
 
-ll overlap_site(Row& row, ll x){
+ll overlap_site(Row& row, ll x){ //// 5 kinds of possible way 
     /** Return site num that x is on
-     *  If no overlap -> return -1; ERROR
+     *  If no overlap -> return closest site_id
      */
-    if (row.x == x) return 0;
+    if (x <= row.x) return 0;
     ll site_id = (x - row.x) / row.site_width;
     if (site_id >= row.site.size()) return row.site.size() - 1;
     return site_id;
@@ -79,7 +79,13 @@ ll PlaceRow(Row& row, ll D_max){
         while (i <= c.n_last){
             x_shift = row.cells[i].x - row.site[x].x;
             y_shift = row.cells[i].y - row.y;
-            if (x_shift*x_shift + y_shift*y_shift > D_max) return -1;// constraint
+            if (x_shift*x_shift + y_shift*y_shift > D_max) {
+                // cout << "site id: " << x << "\n";
+                // cout << "x: " << row.site[x].x << "y: " << row.y << endl;
+                // cout << x_shift*x_shift + y_shift*y_shift << " " << D_max;
+                // cout << "violate constraint\n" ;
+                return -1;
+            }// constraint
             site_w = (row.cells[i].width + row.site_width - 1)/ row.site_width;
             if ((x + site_w - 1)> row.site.size() - 1) return -1; // exceed row right boundary 
             row.cells[i].site_id = x;
